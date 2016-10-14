@@ -32,7 +32,7 @@ func TestSSENoNewline(t *testing.T) {
 	for _, data := range testSSEData {
 		r := strings.NewReader(data.input)
 		enc := NewSSEEncoder(r)
-		enc.(io.Seeker).Seek(data.offset, 0)
+		enc.Seek(data.offset, 0)
 		assert.Equal(t, data.output, readstring(enc))
 	}
 }
@@ -48,7 +48,7 @@ func TestSSENonSeekableReader(t *testing.T) {
 	lr := io.LimitReader(r, 11)
 
 	enc := NewSSEEncoder(lr)
-	enc.(io.Seeker).Seek(10, 0)
+	enc.Seek(10, 0)
 
 	// `id` should be 11 even though the underlying
 	// reader wasn't seeked at all.

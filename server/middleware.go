@@ -153,7 +153,7 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 		encoder = encoders.NewTextEncoder(rd)
 	}
 
-	encoder.(io.Seeker).Seek(offset(r), 0)
+	encoder.Seek(offset(r), 0)
 	rd = ioutil.NopCloser(encoder)
 
 	done := w.(http.CloseNotifier).CloseNotify()

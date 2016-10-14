@@ -31,7 +31,7 @@ func TestTextNoNewline(t *testing.T) {
 	for _, data := range testTextData {
 		r := strings.NewReader(data.input)
 		enc := NewTextEncoder(r)
-		enc.(io.Seeker).Seek(data.offset, 0)
+		enc.Seek(data.offset, 0)
 		assert.Equal(t, data.output, readstring(enc))
 	}
 }
@@ -47,7 +47,7 @@ func TestTextNonSeekableReader(t *testing.T) {
 	lr := io.LimitReader(r, 11)
 
 	enc := NewTextEncoder(lr)
-	enc.(io.Seeker).Seek(10, 0)
+	enc.Seek(10, 0)
 
 	// `id` should be 11 even though the underlying
 	// reader wasn't seeked at all.
