@@ -140,7 +140,7 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 		return nil, errNoContent
 	}
 
-	var encoder encoders.Encoder
+	var encoder io.ReadSeeker
 	if r.Header.Get("Accept") == "text/event-stream" {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")

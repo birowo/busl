@@ -8,7 +8,7 @@ type textEncoder struct {
 }
 
 // NewTextEncoder creates a text events encoder
-func NewTextEncoder(r io.Reader) Encoder {
+func NewTextEncoder(r io.Reader) io.ReadSeeker {
 	return &textEncoder{Reader: r}
 }
 

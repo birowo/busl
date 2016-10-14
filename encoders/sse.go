@@ -17,7 +17,7 @@ type sseEncoder struct {
 }
 
 // NewSSEEncoder creates a new server-sent event encoder
-func NewSSEEncoder(r io.Reader) Encoder {
+func NewSSEEncoder(r io.Reader) io.ReadSeeker {
 	return &sseEncoder{reader: r}
 }
 
