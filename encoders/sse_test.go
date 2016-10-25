@@ -9,14 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type table struct {
+type sseTable struct {
 	offset int64
 	input  string
 	output string
 }
 
 var (
-	testdata = []table{
+	testSSEData = []sseTable{
 		{0, "hello", "id: 5\ndata: hello\n\n"},
 		{0, "hello\n", "id: 6\ndata: hello\ndata: \n\n"},
 		{0, "hello\nworld", "id: 11\ndata: hello\ndata: world\n\n"},
@@ -28,16 +28,16 @@ var (
 	}
 )
 
-func TestNoNewline(t *testing.T) {
-	for _, data := range testdata {
+func TestSSENoNewline(t *testing.T) {
+	for _, data := range testSSEData {
 		r := strings.NewReader(data.input)
 		enc := NewSSEEncoder(r)
-		enc.(io.Seeker).Seek(data.offset, 0)
+		enc.Seek(data.offset, 0)
 		assert.Equal(t, data.output, readstring(enc))
 	}
 }
 
-func TestNonSeekableReader(t *testing.T) {
+func TestSSENonSeekableReader(t *testing.T) {
 	// Seek the underlying reader before
 	// passing to LimitReader: comparably similar
 	// to scenario when reading from an http.Response
@@ -48,7 +48,7 @@ func TestNonSeekableReader(t *testing.T) {
 	lr := io.LimitReader(r, 11)
 
 	enc := NewSSEEncoder(lr)
-	enc.(io.Seeker).Seek(10, 0)
+	enc.Seek(10, io.SeekStart)
 
 	// `id` should be 11 even though the underlying
 	// reader wasn't seeked at all.

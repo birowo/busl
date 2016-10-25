@@ -5,7 +5,9 @@ busl - the bustle part of hustle.
 
 a simple pubsub service that runs on Heroku.
 
-## usage
+## Usage
+
+### Creating streams
 
 create a stream:
 
@@ -14,6 +16,8 @@ $ export STREAM_ID=$(curl http://localhost:5001/streams -X POST)
 # STREAM_ID=b7e586c8404b74e1805f5a9543bc516f
 ```
 
+### Subscribe
+
 connect a consumer using the stream id:
 
 ```
@@ -21,6 +25,19 @@ $ curl http://localhost:5001/streams/$STREAM_ID
 ...
 ```
 
+#### Disconnections
+
+Subscribers can sometimes get disconnected. If the instance is cycled or deployed for example.
+When this happens, you can specify a `Range` header specifying which where your streaming stopped.
+
+```
+$ curl http://localhost:5001/streams/$STREAM_ID -H "Range: bytes=100-"
+```
+
+SSE connections also handle the `Last-Event-ID` header.
+
+
+### Publish
 in a separate terminal, produce some data using the same stream id...
 
 ```
@@ -29,7 +46,7 @@ $ curl -H "Transfer-Encoding: chunked" http://localhost:5001/streams/$STREAM_ID 
 
 ...and you see the busl.
 
-## setup
+## Setup
 
 to setup to test and run busl, setup [godep](http://godoc.org/github.com/tools/godep)
 and then:
@@ -38,7 +55,7 @@ and then:
 $ make setup
 ```
 
-## test
+## Test
 
 to run tests:
 
@@ -46,7 +63,7 @@ to run tests:
 $ make test
 ```
 
-## run
+## Run
 
 to run the server:
 
@@ -54,11 +71,11 @@ to run the server:
 $ make web
 ```
 
-## deploy
+## Deploy
 
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
-## docker setup
+## Docker setup
 
 ```sh
 # Start
