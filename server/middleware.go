@@ -77,7 +77,7 @@ func offset(r *http.Request) (int64, error) {
 	if off = r.Header.Get("last-event-id"); off == "" {
 		if val := r.Header.Get("Range"); val != "" {
 			d := strings.SplitN(val, "=", 2)
-			if d[0] != "bytes" {
+			if d[0] != "bytes" && len(d) == 2 {
 				return 0, errors.New("HTTP 416: Invalid Range")
 			}
 			tuple := strings.SplitN(d[1], "-", 2)
