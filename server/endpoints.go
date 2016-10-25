@@ -13,27 +13,6 @@ import (
 	"github.com/heroku/rollbar"
 )
 
-func (s *Server) mkstream(w http.ResponseWriter, _ *http.Request) {
-	registrar := broker.NewRedisRegistrar()
-	uuid, err := util.NewUUID()
-	if err != nil {
-		http.Error(w, "Unable to create stream. Please try again.", http.StatusServiceUnavailable)
-		rollbar.Error(rollbar.ERR, fmt.Errorf("unable to create new uuid for stream: %#v", err))
-		util.CountWithData("mkstream.create.fail", 1, "error=%s", err)
-		return
-	}
-
-	if err := registrar.Register(uuid); err != nil {
-		http.Error(w, "Unable to create stream. Please try again.", http.StatusServiceUnavailable)
-		rollbar.Error(rollbar.ERR, fmt.Errorf("unable to register stream: %#v", err))
-		util.CountWithData("mkstream.create.fail", 1, "error=%s", err)
-		return
-	}
-
-	util.Count("mkstream.create.success")
-	io.WriteString(w, string(uuid))
-}
-
 func (s *Server) put(w http.ResponseWriter, r *http.Request) {
 	registrar := broker.NewRedisRegistrar()
 
