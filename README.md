@@ -31,7 +31,7 @@ Subscribers can sometimes get disconnected. If the instance is cycled or deploye
 When this happens, you can specify a `Range` header specifying which where your streaming stopped.
 
 ```
-$ curl http://localhost:5001/streams/$STREAM_ID -H "Range: 100-"
+$ curl http://localhost:5001/streams/$STREAM_ID -H "Range: bytes=100-"
 ```
 
 SSE connections also handle the `Last-Event-ID` header.

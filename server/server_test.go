@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -123,6 +124,71 @@ func TestPubSub(t *testing.T) {
 
 		body, _ = ioutil.ReadAll(resp.Body)
 		assert.Equal(t, body, expected)
+	}
+}
+
+func TestPubSubRange(t *testing.T) {
+	server := httptest.NewServer(baseServer.router())
+	defer server.Close()
+
+	data := []struct {
+		offset int
+		input  string
+		output string
+	}{
+		{0, "hello", "hello"},
+		{0, "hello\n", "hello\n"},
+		{0, "hello\nworld", "hello\nworld"},
+		{0, "hello\nworld\n", "hello\nworld\n"},
+		{1, "hello\nworld\n", "ello\nworld\n"},
+		{6, "hello\nworld\n", "world\n"},
+		{11, "hello\nworld\n", "\n"},
+		{12, "hello\nworld\n", ""},
+	}
+
+	client := &http.Client{Transport: &http.Transport{}}
+
+	for _, testdata := range data {
+		uuid, _ := util.NewUUID()
+		url := server.URL + "/streams/" + uuid
+
+		// curl -XPUT <url>/streams/<uuid>
+		request, _ := http.NewRequest("PUT", url, nil)
+		resp, err := client.Do(request)
+		defer resp.Body.Close()
+		assert.Nil(t, err)
+
+		done := make(chan bool)
+
+		// curl -XPOST -H "Transfer-Encoding: chunked" -d "hello" <url>/streams/<uuid>
+		req, _ := http.NewRequest("POST", url, bytes.NewReader([]byte(testdata.input)))
+		req.TransferEncoding = []string{"chunked"}
+
+		r, err := client.Do(req)
+		assert.Nil(t, err)
+		r.Body.Close()
+
+		go func() {
+			request, _ := http.NewRequest("GET", url, nil)
+			request.Header.Add("Range", fmt.Sprintf("bytes=%d-", testdata.offset))
+
+			// curl <url>/streams/<uuid>
+			// -- waiting for publish to arrive
+			resp, err = client.Do(request)
+			defer resp.Body.Close()
+			assert.Nil(t, err)
+
+			body, _ := ioutil.ReadAll(resp.Body)
+			assert.Equal(t, body, []byte(testdata.output))
+
+			if len(body) == 0 {
+				assert.Equal(t, resp.StatusCode, http.StatusNoContent)
+			}
+
+			done <- true
+		}()
+
+		<-done
 	}
 }
 

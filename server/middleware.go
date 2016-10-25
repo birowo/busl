@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -70,18 +71,24 @@ func (s *Server) addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func offset(r *http.Request) int64 {
+func offset(r *http.Request) (int64, error) {
 	var off string
 
 	if off = r.Header.Get("last-event-id"); off == "" {
 		if val := r.Header.Get("Range"); val != "" {
-			tuple := strings.SplitN(val, "-", 2)
+			d := strings.SplitN(val, "=", 2)
+			if d[0] != "bytes" {
+				return 0, errors.New("HTTP 416: Invalid Range")
+			}
+			tuple := strings.SplitN(d[1], "-", 2)
 			off = tuple[0]
 		}
 	}
 
-	n, _ := strconv.Atoi(off)
-	return int64(n)
+	if off == "" {
+		return 0, nil
+	}
+	return strconv.ParseInt(off, 10, 64)
 }
 
 // Given URL:
@@ -106,18 +113,21 @@ func key(r *http.Request) string {
 // Returns a broker or blob reader.
 func (s *Server) newStorageReader(w http.ResponseWriter, r *http.Request) (io.ReadCloser, error) {
 	// Get the offset from Last-Event-ID: or Range:
-	offset := offset(r)
+	o, err := offset(r)
+	if err != nil {
+		return nil, err
+	}
 
 	rd, err := broker.NewReader(key(r))
 
 	// Not cached in the broker anymore, try the storage backend as a fallback.
 	if err == broker.ErrNotRegistered {
-		return storage.Get(requestURI(r), s.StorageBaseURL, offset)
+		return storage.Get(requestURI(r), s.StorageBaseURL, o)
 	}
 
-	if offset > 0 {
+	if o > 0 {
 		if seeker, ok := rd.(io.Seeker); ok {
-			seeker.Seek(offset, 0)
+			seeker.Seek(o, 0)
 		}
 	}
 	return rd, err
@@ -136,7 +146,12 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 	// the keepalive ack.
 	ack := []byte{0}
 
-	if broker.NoContent(rd, offset(r)) {
+	o, err := offset(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if broker.NoContent(rd, o) {
 		return nil, errNoContent
 	}
 
@@ -146,6 +161,7 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 		w.Header().Set("Cache-Control", "no-cache")
 
 		encoder = encoders.NewSSEEncoder(rd)
+		encoder.(io.Seeker).Seek(o, 0)
 
 		// For SSE, we change the ack to a :keepalive
 		ack = []byte(":keepalive\n")
@@ -153,7 +169,7 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 		encoder = encoders.NewTextEncoder(rd)
 	}
 
-	encoder.Seek(offset(r), 0)
+	encoder.Seek(o, io.SeekStart)
 	rd = ioutil.NopCloser(encoder)
 
 	done := w.(http.CloseNotifier).CloseNotify()
