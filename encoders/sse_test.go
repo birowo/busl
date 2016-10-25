@@ -48,7 +48,7 @@ func TestSSENonSeekableReader(t *testing.T) {
 	lr := io.LimitReader(r, 11)
 
 	enc := NewSSEEncoder(lr)
-	enc.Seek(10, 0)
+	enc.Seek(10, io.SeekStart)
 
 	// `id` should be 11 even though the underlying
 	// reader wasn't seeked at all.

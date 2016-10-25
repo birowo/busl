@@ -1,6 +1,9 @@
 package encoders
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 
 type textEncoder struct {
 	io.Reader       // stores the original reader
@@ -19,6 +22,10 @@ func (r *textEncoder) Seek(offset int64, whence int) (n int64, err error) {
 		// The underlying reader doesn't support seeking, but
 		// we should still update the offset so the IDs will
 		// properly reflect the adjusted offset.
+
+		if whence != io.SeekStart {
+			return 0, errors.New("Only SeekStart is supported")
+		}
 		r.offset += offset
 	}
 

@@ -2,6 +2,7 @@ package encoders
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -28,6 +29,10 @@ func (r *sseEncoder) Seek(offset int64, whence int) (n int64, err error) {
 		// The underlying reader doesn't support seeking, but
 		// we should still update the offset so the IDs will
 		// properly reflect the adjusted offset.
+
+		if whence != io.SeekStart {
+			return 0, errors.New("Only SeekStart is supported")
+		}
 		r.offset += offset
 	}
 
