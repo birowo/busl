@@ -22,16 +22,6 @@ var baseServer = NewServer(&Config{
 	StorageBaseURL:    "",
 })
 
-func TestMkstream(t *testing.T) {
-	request, _ := http.NewRequest("POST", "/streams", nil)
-	response := httptest.NewRecorder()
-
-	baseServer.mkstream(response, request)
-
-	assert.Equal(t, response.Code, 200)
-	assert.Len(t, response.Body.String(), 32)
-}
-
 func Test410(t *testing.T) {
 	streamID, _ := util.NewUUID()
 	request, _ := http.NewRequest("GET", "/streams/"+streamID, nil)
@@ -74,18 +64,16 @@ func TestPubSub(t *testing.T) {
 		bytes.Repeat([]byte{'0'}, 32769),
 	}
 
+	client := &http.Client{Transport: &http.Transport{}}
 	for _, expected := range data {
-		// uuid = curl -XPOST <url>/streams
-		resp, err := http.Post(server.URL+"/streams", "", nil)
+		uuid, _ := util.NewUUID()
+		url := server.URL + "/streams/" + uuid
+
+		// curl -XPUT <url>/streams/<uuid>
+		request, _ := http.NewRequest("PUT", url, nil)
+		resp, err := client.Do(request)
 		defer resp.Body.Close()
 		assert.Nil(t, err)
-
-		body, err := ioutil.ReadAll(resp.Body)
-		assert.Nil(t, err)
-
-		// uuid extracted
-		uuid := string(body)
-		assert.Len(t, uuid, 32)
 
 		done := make(chan bool)
 
@@ -96,14 +84,11 @@ func TestPubSub(t *testing.T) {
 			defer resp.Body.Close()
 			assert.Nil(t, err)
 
-			body, _ = ioutil.ReadAll(resp.Body)
+			body, _ := ioutil.ReadAll(resp.Body)
 			assert.Equal(t, body, expected)
 
 			done <- true
 		}()
-
-		transport := &http.Transport{}
-		client := &http.Client{Transport: transport}
 
 		// curl -XPOST -H "Transfer-Encoding: chunked" -d "hello" <url>/streams/<uuid>
 		req, _ := http.NewRequest("POST", server.URL+"/streams/"+uuid, bytes.NewReader(expected))
@@ -122,7 +107,7 @@ func TestPubSub(t *testing.T) {
 		defer resp.Body.Close()
 		assert.Nil(t, err)
 
-		body, _ = ioutil.ReadAll(resp.Body)
+		body, _ := ioutil.ReadAll(resp.Body)
 		assert.Equal(t, body, expected)
 	}
 }
@@ -343,13 +328,11 @@ func TestAuthentication(t *testing.T) {
 	client := &http.Client{Transport: transport}
 
 	testdata := map[string]string{
-		"POST": "/streams",
-		"PUT":  "/streams/1/2/3",
+		"PUT": "/streams/1/2/3",
 	}
 
 	status := map[string]int{
-		"POST": http.StatusOK,
-		"PUT":  http.StatusCreated,
+		"PUT": http.StatusCreated,
 	}
 
 	// Validate that we return 401 for empty and invalid tokens

@@ -12,7 +12,8 @@ a simple pubsub service that runs on Heroku.
 create a stream:
 
 ```
-$ export STREAM_ID=$(curl http://localhost:5001/streams -X POST)
+$ export STREAM_ID=$(uuidgen)
+$ curl http://localhost:5001/streams/$STREAM_ID -X PUT
 # STREAM_ID=b7e586c8404b74e1805f5a9543bc516f
 ```
 

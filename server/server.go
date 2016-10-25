@@ -55,11 +55,6 @@ func (s *Server) router() http.Handler {
 
 	r.HandleFunc("/health", s.addDefaultHeaders(s.health))
 
-	// Legacy endpoint for creating the uuid `key` for you.
-	r.HandleFunc("/streams", s.auth(s.addDefaultHeaders(s.mkstream)))
-
-	// New `key` design for allowing any kind of id to be decided
-	// by the caller (in this case, it mirrors what we have in S3).
 	r.HandleFunc("/streams/{key:.+}", s.addDefaultHeaders(s.sub)).Methods("GET")
 	r.HandleFunc("/streams/{key:.+}", s.addDefaultHeaders(s.pub)).Methods("POST")
 	r.HandleFunc("/streams/{key:.+}", s.auth(s.addDefaultHeaders(s.put))).Methods("PUT")
