@@ -13,7 +13,7 @@ import (
 	"github.com/heroku/rollbar"
 )
 
-func (s *Server) put(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createStream(w http.ResponseWriter, r *http.Request) {
 	registrar := broker.NewRedisRegistrar()
 
 	if err := registrar.Register(key(r)); err != nil {
@@ -30,7 +30,7 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "OK")
 }
 
-func (s *Server) pub(w http.ResponseWriter, r *http.Request) {
+func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 	if !util.StringInSlice(r.TransferEncoding, "chunked") {
 		http.Error(w, "A chunked Transfer-Encoding header is required.", http.StatusBadRequest)
 		return
@@ -71,7 +71,7 @@ func (s *Server) pub(w http.ResponseWriter, r *http.Request) {
 	go storeOutput(key(r), requestURI(r), s.StorageBaseURL)
 }
 
-func (s *Server) sub(w http.ResponseWriter, r *http.Request) {
+func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 	if _, ok := w.(http.Flusher); !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
