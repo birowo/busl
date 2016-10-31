@@ -132,7 +132,7 @@ func TestPublisherReconnect(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = writer.Write([]byte("hello"))
 	assert.Nil(t, err)
-	writer.Close()
+	defer writer.Close()
 
 	go func() {
 		// curl <url>/streams/<uuid>
