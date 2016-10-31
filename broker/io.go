@@ -255,11 +255,15 @@ func RenewExpiry(rd io.Reader) {
 }
 
 // Len returns the length of data already send to the reader
-func Len(rd io.WriteCloser) (int64, error) {
+func Len(wd io.WriteCloser) (int64, error) {
+	w, ok := wd.(*writer)
+	if !ok {
+		return 0, errors.New("Cannot cast argument to `writer`")
+	}
 	conn := redisPool.Get()
 	defer conn.Close()
 
-	strlen, err := redis.Int64(conn.Do("STRLEN", rd.(*writer).channel.id()))
+	strlen, err := redis.Int64(conn.Do("STRLEN", w.channel.id()))
 	if err != nil {
 		return 0, err
 	}
