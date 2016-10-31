@@ -89,7 +89,7 @@ func streamNoRetry(url string, stdin io.Reader, conf *Config) error {
 		return errMissingURL
 	}
 
-	tr := newTransport(conf)
+	client := &http.Client{Transport: newTransport(conf)}
 
 	// In the event that the `busl` connection doesn't work,
 	// we still need to proceed with the command's execution.
@@ -105,7 +105,7 @@ func streamNoRetry(url string, stdin io.Reader, conf *Config) error {
 		return err
 	}
 
-	res, err := tr.RoundTrip(req)
+	res, err := client.Do(req)
 	if res != nil {
 		defer res.Body.Close()
 	}
