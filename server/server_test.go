@@ -44,6 +44,25 @@ func TestPubNotRegistered(t *testing.T) {
 	assert.Equal(t, response.Code, http.StatusNotFound)
 }
 
+func TestPubClosed(t *testing.T) {
+	uuid, _ := util.NewUUID()
+
+	registrar := broker.NewRedisRegistrar()
+	err := registrar.Register(uuid)
+	assert.Nil(t, err)
+	writer, err := broker.NewWriter(uuid)
+	assert.Nil(t, err)
+	writer.Close()
+
+	request, _ := http.NewRequest("POST", "/streams/"+uuid, nil)
+	request.TransferEncoding = []string{"chunked"}
+	response := httptest.NewRecorder()
+
+	baseServer.publish(response, request)
+
+	assert.Equal(t, response.Code, http.StatusNotFound)
+}
+
 func TestPubWithoutTransferEncoding(t *testing.T) {
 	request, _ := http.NewRequest("POST", "/streams/1234", nil)
 	response := httptest.NewRecorder()
