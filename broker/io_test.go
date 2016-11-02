@@ -223,3 +223,17 @@ func TestRedisReadFromClosed(t *testing.T) {
 	assert.False(t, NoContent(r, 0))
 	assert.True(t, NoContent(r, 5))
 }
+
+func TestLen(t *testing.T) {
+	_, w := newReaderWriter()
+
+	l, err := Len(w)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), l)
+
+	w.Write([]byte("hello"))
+
+	l, err = Len(w)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(5), l)
+}

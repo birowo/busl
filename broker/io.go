@@ -16,6 +16,7 @@ type writer struct {
 // known errors
 var (
 	ErrNotRegistered = errors.New("Channel is not registered.")
+	ErrClosed        = errors.New("Channel is closed.")
 )
 
 // NewWriter creates a new redis channel writer
@@ -251,4 +252,21 @@ func RenewExpiry(rd io.Reader) {
 	conn.Send("MULTI")
 	conn.Send("EXPIRE", r.channel.id(), redisChannelExpire)
 	conn.Do("EXEC")
+}
+
+// Len returns the length of data already send to the reader
+func Len(wd io.WriteCloser) (int64, error) {
+	w, ok := wd.(*writer)
+	if !ok {
+		return 0, errors.New("Cannot cast argument to `writer`")
+	}
+	conn := redisPool.Get()
+	defer conn.Close()
+
+	strlen, err := redis.Int64(conn.Do("STRLEN", w.channel.id()))
+	if err != nil {
+		return 0, err
+	}
+
+	return strlen, nil
 }

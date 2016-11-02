@@ -46,6 +46,19 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 	body := bufio.NewReader(r.Body)
 	defer r.Body.Close()
 
+	wl, err := broker.Len(writer)
+	if err != nil {
+		handleError(w, r, err)
+		return
+	}
+	if wl > 0 {
+		_, err = body.Discard(int(wl))
+		if err != nil {
+			handleError(w, r, err)
+			return
+		}
+	}
+
 	_, err = io.Copy(writer, body)
 
 	if err == io.ErrUnexpectedEOF {

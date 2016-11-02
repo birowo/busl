@@ -131,6 +131,62 @@ func TestPubSub(t *testing.T) {
 	}
 }
 
+func TestPublisherReconnect(t *testing.T) {
+	server := httptest.NewServer(baseServer.router())
+	defer server.Close()
+
+	client := &http.Client{Transport: &http.Transport{}}
+
+	uuid, _ := util.NewUUID()
+	url := server.URL + "/streams/" + uuid
+	// curl -XPUT <url>/streams/<uuid>
+	request, _ := http.NewRequest("PUT", url, nil)
+	resp, err := client.Do(request)
+	defer resp.Body.Close()
+	assert.Nil(t, err)
+
+	done := make(chan bool)
+
+	writer, err := broker.NewWriter(uuid)
+	assert.Nil(t, err)
+	_, err = writer.Write([]byte("hello"))
+	assert.Nil(t, err)
+	defer writer.Close()
+
+	go func() {
+		// curl <url>/streams/<uuid>
+		// -- waiting for publish to arrive
+		resp, err = http.Get(server.URL + "/streams/" + uuid)
+		defer resp.Body.Close()
+		assert.Nil(t, err)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		assert.Equal(t, body, []byte("hello world"))
+
+		done <- true
+	}()
+
+	// curl -XPOST -H "Transfer-Encoding: chunked" -d "hello" <url>/streams/<uuid>
+	req, _ := http.NewRequest("POST", server.URL+"/streams/"+uuid, bytes.NewReader([]byte("hello world")))
+	req.TransferEncoding = []string{"chunked"}
+	r, err := client.Do(req)
+	r.Body.Close()
+	assert.Nil(t, err)
+
+	<-done
+
+	// Read the whole response after the publisher has
+	// completed. The mechanics of this is different in that
+	// most of the content will be replayed instead of received
+	// in chunks as they arrive.
+	resp, err = http.Get(server.URL + "/streams/" + uuid)
+	defer resp.Body.Close()
+	assert.Nil(t, err)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	assert.Equal(t, body, []byte("hello world"))
+}
+
 func TestPubSubRange(t *testing.T) {
 	server := httptest.NewServer(baseServer.router())
 	defer server.Close()
