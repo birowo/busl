@@ -18,6 +18,10 @@ type Transport struct {
 
 func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error) {
 	t.body = &bodyReader{req.Body, &bytes.Buffer{}, true}
+	if t.Transport == nil {
+		t.Transport = &http.Transport{}
+	}
+
 	req.Body = t.body
 	req.ContentLength = -1
 	return t.tries(req)

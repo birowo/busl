@@ -23,10 +23,7 @@ func TestNoError(t *testing.T) {
 			t.Fatalf("Expected body to be 'hello world'. Got '%q'", body)
 		}
 	})
-	transport := &Transport{
-		Transport: &http.Transport{},
-	}
-	client := &http.Client{Transport: transport}
+	client := &http.Client{Transport: &Transport{}}
 	res, err := client.Post(server.URL, "", bytes.NewBuffer([]byte("hello world")))
 	if err != nil {
 		t.Fatal(err)
@@ -63,7 +60,6 @@ func TestDisconnection(t *testing.T) {
 		}
 	})
 	transport := &Transport{
-		Transport:  &http.Transport{},
 		MaxRetries: 5,
 	}
 	client := &http.Client{Transport: transport}
