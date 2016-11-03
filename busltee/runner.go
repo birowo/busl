@@ -89,7 +89,7 @@ func streamNoRetry(url string, stdin io.Reader, conf *Config) error {
 		return errMissingURL
 	}
 
-	tr := newTransport(conf)
+	client := &http.Client{Transport: newTransport(conf)}
 
 	// In the event that the `busl` connection doesn't work,
 	// we still need to proceed with the command's execution.
@@ -105,14 +105,14 @@ func streamNoRetry(url string, stdin io.Reader, conf *Config) error {
 		return err
 	}
 
-	res, err := tr.RoundTrip(req)
+	res, err := client.Do(req)
 	if res != nil {
 		defer res.Body.Close()
 	}
 	return err
 }
 
-func newTransport(conf *Config) *http.Transport {
+func newTransport(conf *Config) http.RoundTripper {
 	tr := &http.Transport{}
 
 	if conf.Timeout > 0 {
@@ -126,7 +126,10 @@ func newTransport(conf *Config) *http.Transport {
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
-	return tr
+	return &Transport{
+		Transport:  tr,
+		MaxRetries: 3,
+	}
 }
 
 func run(args []string, stdout, stderr io.WriteCloser) error {
