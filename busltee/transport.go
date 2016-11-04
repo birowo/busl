@@ -30,7 +30,7 @@ func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error)
 func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 	res, err := t.Transport.RoundTrip(req)
 
-	if err != nil {
+	if err != nil || res.StatusCode/100 != 2 {
 		if t.retries < t.MaxRetries {
 			t.retries += 1
 			t.body.Reset()
