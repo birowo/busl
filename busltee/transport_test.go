@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestNoError(t *testing.T) {
@@ -23,7 +24,11 @@ func TestNoError(t *testing.T) {
 			t.Fatalf("Expected body to be 'hello world'. Got '%q'", body)
 		}
 	})
-	client := &http.Client{Transport: &Transport{}}
+	client := &http.Client{
+		Transport: &Transport{
+			SleepDuration: time.Millisecond,
+		},
+	}
 	res, err := client.Post(server.URL, "", bytes.NewBuffer([]byte("hello world")))
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +65,8 @@ func TestDisconnection(t *testing.T) {
 		}
 	})
 	transport := &Transport{
-		MaxRetries: 5,
+		MaxRetries:    5,
+		SleepDuration: time.Millisecond,
 	}
 	client := &http.Client{Transport: transport}
 	res, err := client.Post(server.URL, "", &stdin)
@@ -103,7 +109,8 @@ func TestHTTPError(t *testing.T) {
 		}
 	})
 	transport := &Transport{
-		MaxRetries: 5,
+		MaxRetries:    5,
+		SleepDuration: time.Millisecond,
 	}
 	client := &http.Client{Transport: transport}
 	res, err := client.Post(server.URL, "", &stdin)

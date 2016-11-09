@@ -5,21 +5,26 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 )
 
 var ErrTooManyRetries = errors.New("Reached max retries")
 
 type Transport struct {
-	retries    uint
-	MaxRetries uint
-	Transport  http.RoundTripper
-	body       *bodyReader
+	retries       uint
+	MaxRetries    uint
+	Transport     http.RoundTripper
+	SleepDuration time.Duration
+	body          *bodyReader
 }
 
 func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error) {
 	t.body = &bodyReader{req.Body, &bytes.Buffer{}, true}
 	if t.Transport == nil {
 		t.Transport = &http.Transport{}
+	}
+	if t.SleepDuration == 0 {
+		t.SleepDuration = time.Second
 	}
 
 	req.Body = t.body
@@ -32,6 +37,7 @@ func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 
 	if err != nil || res.StatusCode/100 != 2 {
 		if t.retries < t.MaxRetries {
+			time.Sleep(t.SleepDuration)
 			t.retries += 1
 			t.body.Reset()
 			return t.tries(req)
