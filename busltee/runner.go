@@ -129,7 +129,7 @@ func newTransport(conf *Config) http.RoundTripper {
 
 	return &Transport{
 		Transport:     tr,
-		MaxRetries:    3,
+		MaxRetries:    15,
 		SleepDuration: conf.SleepDuration,
 	}
 }

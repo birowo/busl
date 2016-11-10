@@ -53,6 +53,8 @@ func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 		} else {
 			return nil, err
 		}
+	} else {
+		t.retries = 0
 	}
 	return res, err
 }
