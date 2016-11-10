@@ -1,10 +1,11 @@
 package busltee
 
 import (
-	"bytes"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -19,7 +20,12 @@ type Transport struct {
 }
 
 func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error) {
-	t.body = &bodyReader{req.Body, &bytes.Buffer{}, true}
+	tmpfile, err := ioutil.TempFile("", "busltee_buffer")
+	if err != nil {
+		return nil, err
+	}
+	defer tmpfile.Close()
+	t.body = &bodyReader{req.Body, tmpfile, nil}
 	if t.Transport == nil {
 		t.Transport = &http.Transport{}
 	}
@@ -39,40 +45,44 @@ func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 		if t.retries < t.MaxRetries {
 			time.Sleep(t.SleepDuration)
 			t.retries += 1
-			t.body.Reset()
+			err = t.body.Reset()
+			if err != nil {
+				return nil, err
+			}
 			return t.tries(req)
 		} else {
 			return nil, err
 		}
 	}
-
 	return res, err
 }
 
 type bodyReader struct {
-	r          io.Reader
-	w          *bytes.Buffer
-	bufferSent bool
+	streamer   io.Reader
+	buffWriter *os.File
+	buffReader *os.File
 }
 
 func (*bodyReader) Close() error { return nil }
-func (b *bodyReader) Reset() {
-	b.bufferSent = false
+func (b *bodyReader) Reset() error {
+	file, err := os.Open(b.buffWriter.Name())
+	b.buffReader = file
+	return err
 }
 
 func (b *bodyReader) Read(p []byte) (int, error) {
-	if b.bufferSent {
-		n, err := b.r.Read(p)
+	if b.buffReader == nil {
+		n, err := b.streamer.Read(p)
 		if n > 0 {
-			if n, err := b.w.Write(p[:n]); err != nil {
+			if n, err := b.buffWriter.Write(p[:n]); err != nil {
 				return n, err
 			}
 		}
 		return n, err
 	} else {
-		b.bufferSent = true
-		n, err := bytes.NewBuffer(b.w.Bytes()).Read(p)
+		n, err := b.buffReader.Read(p)
 		if err == io.EOF {
+			b.buffReader = nil
 			err = nil
 		}
 
