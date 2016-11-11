@@ -11,7 +11,10 @@ import (
 	"time"
 )
 
-var conf = &Config{Timeout: 1}
+var conf = &Config{
+	Timeout:       1,
+	SleepDuration: time.Millisecond,
+}
 
 func TestStreamNoURL(t *testing.T) {
 	err := streamNoRetry("", strings.NewReader(""), conf)

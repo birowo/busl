@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestNoError(t *testing.T) {
@@ -23,7 +24,11 @@ func TestNoError(t *testing.T) {
 			t.Fatalf("Expected body to be 'hello world'. Got '%q'", body)
 		}
 	})
-	client := &http.Client{Transport: &Transport{}}
+	client := &http.Client{
+		Transport: &Transport{
+			SleepDuration: time.Millisecond,
+		},
+	}
 	res, err := client.Post(server.URL, "", bytes.NewBuffer([]byte("hello world")))
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +65,8 @@ func TestDisconnection(t *testing.T) {
 		}
 	})
 	transport := &Transport{
-		MaxRetries: 5,
+		MaxRetries:    5,
+		SleepDuration: time.Millisecond,
 	}
 	client := &http.Client{Transport: transport}
 	res, err := client.Post(server.URL, "", &stdin)
@@ -90,20 +96,22 @@ func TestHTTPError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		stdin.Write([]byte("hello world\n"))
 
 		if string(body[:len(body)]) != expectedBody {
-			t.Fatalf("Unexpected body. Expected %q. Got %q", expectedBody, body)
+			t.Fatalf("Unexpected body. Expected %q. Got %q - Attempt %d", expectedBody, body[:len(body)], callCount)
 		}
-		expectedBody += "hello world\n"
-		callCount += 1
 
-		if callCount < 4 {
+		if callCount < 9 {
 			w.WriteHeader(http.StatusServiceUnavailable)
+
+			stdin.Write([]byte("hello world\n"))
+			expectedBody += "hello world\n"
+			callCount += 1
 		}
 	})
 	transport := &Transport{
-		MaxRetries: 5,
+		MaxRetries:    10,
+		SleepDuration: time.Millisecond,
 	}
 	client := &http.Client{Transport: transport}
 	res, err := client.Post(server.URL, "", &stdin)
@@ -114,7 +122,7 @@ func TestHTTPError(t *testing.T) {
 		t.Fatalf("was expecting 200 got %d", res.StatusCode)
 	}
 
-	if callCount != 4 {
-		t.Fatalf("was expecting 5 retries. Got %d", callCount)
+	if callCount != 9 {
+		t.Fatalf("was expecting 9 retries. Got %d", callCount)
 	}
 }

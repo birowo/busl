@@ -17,14 +17,15 @@ import (
 
 // Config holds the runner configuration
 type Config struct {
-	Insecure  bool
-	Timeout   float64
-	Retry     int
-	URL       string
-	Args      []string
-	LogPrefix string
-	LogFile   string
-	RequestID string
+	Insecure      bool
+	Timeout       float64
+	Retry         int
+	SleepDuration time.Duration
+	URL           string
+	Args          []string
+	LogPrefix     string
+	LogFile       string
+	RequestID     string
 }
 
 // Run creates the stdin listener and forwards logs to URI
@@ -127,8 +128,9 @@ func newTransport(conf *Config) http.RoundTripper {
 	}
 
 	return &Transport{
-		Transport:  tr,
-		MaxRetries: 3,
+		Transport:     tr,
+		MaxRetries:    uint(conf.Retry),
+		SleepDuration: conf.SleepDuration,
 	}
 }
 
