@@ -1,14 +1,15 @@
 {
 	"comment": "",
-	"ignore": "test",
 	"heroku": {
-		"install": ["./cmd/..."],
-		"goVersion": "go1.7"
+		"goVersion": "go1.7",
+		"install": [
+			"./cmd/..."
+		]
 	},
+	"ignore": "test",
 	"package": [
 		{
 			"checksumSHA1": "S+kZB+E4P+VhEzVhGTGZYWt0UkY=",
-			"comment": "0.4.0-11-g0cd5a1d",
 			"path": "github.com/braintree/manners",
 			"revision": "0cd5a1d1e1ea392cf99fb8c3a1780955f3eb4a14"
 		},
