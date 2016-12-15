@@ -14,6 +14,12 @@
 			"revision": "0cd5a1d1e1ea392cf99fb8c3a1780955f3eb4a14"
 		},
 		{
+			"checksumSHA1": "1iwn0t/NfGasPj/cR3udou+L+Nc=",
+			"path": "github.com/dmathieu/safebuffer",
+			"revision": "82605c2836cd9b1f3a9df3df5db4b7956d61c215",
+			"revisionTime": "2016-12-20T08:09:25Z"
+		},
+		{
 			"checksumSHA1": "2IZGKMD4y38B05rNQIb5tnRIpR8=",
 			"path": "github.com/garyburd/redigo/internal",
 			"revision": "535138d7bcd717d6531c701ef5933d98b1866257"

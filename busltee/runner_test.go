@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -83,14 +84,18 @@ func TestStreamPost(t *testing.T) {
 
 func Test_run(t *testing.T) {
 	r, w := io.Pipe()
-
 	buf := &bytes.Buffer{}
+	m := &sync.Mutex{}
 
 	go func() {
+		m.Lock()
+		defer m.Unlock()
 		io.Copy(buf, r)
 	}()
 	run([]string{"printf", "hello"}, w, w)
 
+	m.Lock()
+	defer m.Unlock()
 	if out := buf.Bytes(); string(out) != "hello" {
 		t.Fatalf("Expected reader to have generated `hello`, got %s", out)
 	}

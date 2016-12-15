@@ -99,7 +99,7 @@ func TestPubSub(t *testing.T) {
 		go func() {
 			// curl <url>/streams/<uuid>
 			// -- waiting for publish to arrive
-			resp, err = http.Get(server.URL + "/streams/" + uuid)
+			resp, err := http.Get(server.URL + "/streams/" + uuid)
 			defer resp.Body.Close()
 			assert.Nil(t, err)
 
@@ -156,7 +156,7 @@ func TestPublisherReconnect(t *testing.T) {
 	go func() {
 		// curl <url>/streams/<uuid>
 		// -- waiting for publish to arrive
-		resp, err = http.Get(server.URL + "/streams/" + uuid)
+		resp, err := http.Get(server.URL + "/streams/" + uuid)
 		defer resp.Body.Close()
 		assert.Nil(t, err)
 
@@ -234,7 +234,7 @@ func TestPubSubRange(t *testing.T) {
 
 			// curl <url>/streams/<uuid>
 			// -- waiting for publish to arrive
-			resp, err = client.Do(request)
+			resp, err := client.Do(request)
 			defer resp.Body.Close()
 			assert.Nil(t, err)
 
@@ -300,7 +300,7 @@ func TestPubSubSSE(t *testing.T) {
 
 			// curl <url>/streams/<uuid>
 			// -- waiting for publish to arrive
-			resp, err = client.Do(request)
+			resp, err := client.Do(request)
 			defer resp.Body.Close()
 			assert.Nil(t, err)
 

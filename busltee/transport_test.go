@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/dmathieu/safebuffer"
 )
 
 func TestNoError(t *testing.T) {
@@ -45,7 +47,7 @@ func TestDisconnection(t *testing.T) {
 
 	var callCount int
 	var expectedBody string
-	var stdin bytes.Buffer
+	stdin := safebuffer.NewMock()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -69,7 +71,7 @@ func TestDisconnection(t *testing.T) {
 		SleepDuration: time.Millisecond,
 	}
 	client := &http.Client{Transport: transport}
-	res, err := client.Post(server.URL, "", &stdin)
+	res, err := client.Post(server.URL, "", stdin)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +91,7 @@ func TestHTTPError(t *testing.T) {
 
 	var callCount int
 	var expectedBody string
-	var stdin bytes.Buffer
+	stdin := safebuffer.NewMock()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -114,7 +116,7 @@ func TestHTTPError(t *testing.T) {
 		SleepDuration: time.Millisecond,
 	}
 	client := &http.Client{Transport: transport}
-	res, err := client.Post(server.URL, "", &stdin)
+	res, err := client.Post(server.URL, "", stdin)
 	if err != nil {
 		t.Fatal(err)
 	}
