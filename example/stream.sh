@@ -1,7 +1,6 @@
 #!/bin/bash
-APP_NAME=damien-busl
 STREAM_ID=$(uuidgen)
-URL=http://$APP_NAME.herokuapp.com/streams/$STREAM_ID
+URL=http://$BUSL_HOST/streams/$STREAM_ID
 
 echo "Creating a stream"
 curl $URL -X PUT

@@ -3,7 +3,7 @@ REDIS_URL=redis://localhost:6379
 PORT=6000
 
 STREAM_ID=$(uuidgen)
-URL=http://busl-development.$HEROKU_CLOUD.herokuappdev.com/streams/$STREAM_ID
+URL=http://$BUSL_HOST/streams/$STREAM_ID
 
 echo "Creating a stream"
 curl $URL -X PUT
