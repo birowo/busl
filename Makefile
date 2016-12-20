@@ -3,7 +3,7 @@ GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 travis: tidy test
 
 test: .PHONY govendor
-	env $$(cat .env) govendor test +local
+	env $$(cat .env) govendor test +local -race
 
 setup: hooks tidy
 	cp .env.sample .env
