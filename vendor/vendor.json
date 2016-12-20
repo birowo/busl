@@ -1,0 +1,61 @@
+{
+	"comment": "",
+	"heroku": {
+		"goVersion": "go1.7",
+		"install": [
+			"./cmd/..."
+		]
+	},
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "S+kZB+E4P+VhEzVhGTGZYWt0UkY=",
+			"path": "github.com/braintree/manners",
+			"revision": "0cd5a1d1e1ea392cf99fb8c3a1780955f3eb4a14"
+		},
+		{
+			"checksumSHA1": "2IZGKMD4y38B05rNQIb5tnRIpR8=",
+			"path": "github.com/garyburd/redigo/internal",
+			"revision": "535138d7bcd717d6531c701ef5933d98b1866257"
+		},
+		{
+			"checksumSHA1": "hOUXKEm/2Yf/Am98jrJv4k/Bkz4=",
+			"path": "github.com/garyburd/redigo/redis",
+			"revision": "535138d7bcd717d6531c701ef5933d98b1866257"
+		},
+		{
+			"checksumSHA1": "iIUYZyoanCQQTUaWsu8b+iOSPt4=",
+			"path": "github.com/gorilla/context",
+			"revision": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"checksumSHA1": "l18VMybqvbowqoAmPFZOhObzpaE=",
+			"path": "github.com/gorilla/mux",
+			"revision": "8096f47503459bcc74d1f4c487b7e6e42e5746b5"
+		},
+		{
+			"checksumSHA1": "NuEdxJ2YTsUz+EjGLPbBsD62tMY=",
+			"path": "github.com/heroku/authenticater",
+			"revision": "90765b9b92e3aef6da4b217586e9b64e0aee8378"
+		},
+		{
+			"checksumSHA1": "CD+EtSm6948GZ8+xmCRIZX8UcX0=",
+			"comment": "v0.3.0",
+			"path": "github.com/heroku/rollbar",
+			"revision": "197e8a4fd165c96afe325b2297cf3bcaa5b9a6b4"
+		},
+		{
+			"checksumSHA1": "C1k8Ky5xbqUBYMo6aesBq/yU2cQ=",
+			"comment": "v0.0.1-2-g2e6f5f3",
+			"path": "github.com/ogier/pflag",
+			"revision": "2e6f5f3f0c40ab9cb459742296f6a2aaab1fd5dc"
+		},
+		{
+			"checksumSHA1": "xrMX4lJ/arfx6PnME/lLgaecfgE=",
+			"comment": "v1.0",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "232e8563676cd15c3a36ba5e675ad4312ac4cb11"
+		}
+	],
+	"rootPath": "github.com/heroku/busl"
+}
