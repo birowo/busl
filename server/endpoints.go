@@ -41,7 +41,6 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, err)
 		return
 	}
-	defer writer.Close()
 
 	body := bufio.NewReader(r.Body)
 	defer r.Body.Close()
@@ -80,6 +79,7 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writer.Close()
 	// Asynchronously upload the output to our defined storage backend.
 	go storeOutput(key(r), requestURI(r), s.StorageBaseURL)
 }
