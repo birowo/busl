@@ -69,7 +69,6 @@ func newBodyReader(streamer io.Reader, buffer *os.File) (*bodyReader, error) {
 		return nil, err
 	}
 	return &bodyReader{
-		streamer,
 		&sync.Mutex{},
 		io.MultiReader(data, io.TeeReader(streamer, buffer)),
 	}, nil
@@ -89,22 +88,21 @@ func readBuffer(b *os.File) (*bytes.Buffer, error) {
 }
 
 type bodyReader struct {
-	streamer io.Reader
-	mutex    *sync.Mutex
-	reader   io.Reader
+	mutex  *sync.Mutex
+	reader io.Reader
 }
 
 func (b *bodyReader) Close() error {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	b.streamer = nil
+	b.reader = nil
 	return nil
 }
 func (b *bodyReader) Read(p []byte) (int, error) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	if b.streamer == nil {
+	if b.reader == nil {
 		return 0, io.EOF
 	}
 
