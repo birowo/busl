@@ -98,6 +98,7 @@ func (b *bodyReader) Close() error {
 	b.reader = nil
 	return nil
 }
+
 func (b *bodyReader) Read(p []byte) (int, error) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
