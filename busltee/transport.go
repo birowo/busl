@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -67,7 +68,7 @@ func newBodyReader(streamer io.Reader, buffer *os.File) (*bodyReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &bodyReader{streamer, buffer, data}, nil
+	return &bodyReader{streamer, buffer, data, &sync.Mutex{}}, nil
 }
 
 func readBuffer(b *os.File) (*bytes.Buffer, error) {
@@ -90,13 +91,19 @@ type bodyReader struct {
 	streamer   io.Reader
 	buffWriter *os.File
 	buffReader *bytes.Buffer
+	mutex      *sync.Mutex
 }
 
 func (b *bodyReader) Close() error {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
 	b.streamer = nil
 	return nil
 }
 func (b *bodyReader) Read(p []byte) (int, error) {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
 	if b.streamer == nil {
 		return 0, io.EOF
 	}

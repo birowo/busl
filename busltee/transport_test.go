@@ -2,6 +2,7 @@ package busltee
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -126,5 +127,38 @@ func TestHTTPError(t *testing.T) {
 
 	if callCount != 9 {
 		t.Fatalf("was expecting 9 retries. Got %d", callCount)
+	}
+}
+
+type slowBuffer struct{}
+
+func (s *slowBuffer) Read(p []byte) (int, error) {
+	time.Sleep(time.Second)
+
+	content := []byte("hello world")
+	copy(p, content)
+	return len(content), io.EOF
+}
+
+func TestBodyReaderBlocksClosing(t *testing.T) {
+	streamer := &slowBuffer{}
+	buffer, err := ioutil.TempFile("", "busltee_buffer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer buffer.Close()
+
+	reader, err := newBodyReader(streamer, buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go reader.Close()
+
+	data, err := ioutil.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "hello world" {
+		t.Fatalf("Expected data to be `hello world`. Got %q", data)
 	}
 }
