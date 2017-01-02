@@ -68,7 +68,12 @@ func newBodyReader(streamer io.Reader, buffer *os.File) (*bodyReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &bodyReader{streamer, buffer, data, &sync.Mutex{}}, nil
+	return &bodyReader{
+		streamer,
+		buffer,
+		data,
+		&sync.Mutex{},
+	}, nil
 }
 
 func readBuffer(b *os.File) (*bytes.Buffer, error) {
