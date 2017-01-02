@@ -81,9 +81,6 @@ func readBuffer(b *os.File) (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(d) == 0 {
-		return nil, nil
-	}
 	return bytes.NewBuffer(d), err
 }
 
