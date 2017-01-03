@@ -153,9 +153,7 @@ func fauxBusl() (*httptest.Server, chan []byte) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		println("Hit here")
 		if r.Method == "POST" {
-			println("POST got")
 			b, _ := ioutil.ReadAll(r.Body)
 			post <- b
 		}
