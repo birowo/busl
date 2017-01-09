@@ -20,6 +20,7 @@ type Config struct {
 	Insecure      bool
 	Timeout       float64
 	Retry         int
+	StreamRetry   int
 	SleepDuration time.Duration
 	URL           string
 	Args          []string
@@ -129,7 +130,7 @@ func newTransport(conf *Config) http.RoundTripper {
 
 	return &Transport{
 		Transport:     tr,
-		MaxRetries:    uint(conf.Retry),
+		MaxRetries:    uint(conf.StreamRetry),
 		SleepDuration: conf.SleepDuration,
 	}
 }

@@ -51,6 +51,7 @@ func parseFlags() (*cmdConfig, *busltee.Config, error) {
 	// Connection related flags
 	flag.BoolVarP(&publisherConf.Insecure, "insecure", "k", false, "allows insecure SSL connections")
 	flag.IntVar(&publisherConf.Retry, "retry", 5, "max retries for connect timeout errors")
+	flag.IntVar(&publisherConf.StreamRetry, "stream-retry", 60, "max retries for streamer disconnections")
 	flag.Float64Var(&publisherConf.Timeout, "connect-timeout", 1, "max number of seconds to connect to busl URL")
 
 	// Logging related flags
