@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -48,10 +49,27 @@ func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 	}
 	newReq, err := http.NewRequest(req.Method, req.URL.String(), bodyReader)
 	newReq.Header = req.Header
+
+	log.Printf(
+		"count#busltee.streamer.start=1 request_id=%s url=%s",
+		req.Header.Get("Request-Id"),
+		req.URL,
+	)
 	res, err := t.Transport.RoundTrip(newReq)
+	var statusCode int
+	if res != nil {
+		statusCode = res.StatusCode
+	}
+	log.Printf(
+		"count#busltee.streamer.end=1 request_id=%s url=%s err=%q status=%d",
+		req.Header.Get("Request-Id"),
+		req.URL,
+		err,
+		statusCode,
+	)
 	newReq.Body.Close()
 
-	if err != nil || res.StatusCode/100 != 2 {
+	if err != nil || statusCode/100 != 2 {
 		if t.retries < t.MaxRetries {
 			time.Sleep(t.SleepDuration)
 			t.retries += 1
