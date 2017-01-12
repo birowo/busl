@@ -125,6 +125,7 @@ func TestPubSub(t *testing.T) {
 		resp, err = http.Get(server.URL + "/streams/" + uuid)
 		defer resp.Body.Close()
 		assert.Nil(t, err)
+		assert.Equal(t, 200, resp.StatusCode)
 
 		body, _ := ioutil.ReadAll(resp.Body)
 		assert.Equal(t, body, expected)
@@ -355,6 +356,7 @@ func TestSubGoneWithBackend(t *testing.T) {
 	resp, err := http.Get(server.URL + "/streams/" + uuid)
 	defer resp.Body.Close()
 	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	assert.Equal(t, body, []byte("hello world"))
