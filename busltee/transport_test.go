@@ -6,11 +6,39 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/dmathieu/safebuffer"
 )
+
+type fakeStdin struct {
+	io.ReadWriter
+	m      *sync.Mutex
+	closed bool
+}
+
+func (f *fakeStdin) Close() {
+	f.m.Lock()
+	defer f.m.Unlock()
+	f.closed = true
+}
+
+func (f *fakeStdin) Read(p []byte) (int, error) {
+	for {
+		i, err := f.ReadWriter.Read(p)
+		f.m.Lock()
+		if err == io.EOF && !f.closed {
+			err = nil
+		}
+		f.m.Unlock()
+
+		if i > 0 || err != nil {
+			return i, err
+		}
+	}
+}
 
 func TestNoError(t *testing.T) {
 	mux := http.NewServeMux()
@@ -48,23 +76,33 @@ func TestDisconnection(t *testing.T) {
 
 	var callCount int
 	var expectedBody string
-	stdin := safebuffer.NewMock()
+	stdin := &fakeStdin{safebuffer.NewMock(), &sync.Mutex{}, false}
+
+	go func() {
+		var count int
+		for count < 4 {
+			stdin.Write([]byte("hello world\n"))
+			expectedBody += "hello world\n"
+			time.Sleep(time.Millisecond)
+			count += 1
+		}
+		stdin.Close()
+	}()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
 			t.Fatal(err)
 		}
-		stdin.Write([]byte("hello world\n"))
 
 		if string(body[:len(body)]) != expectedBody {
 			t.Fatalf("Unexpected body. Expected %q. Got %q", expectedBody, body)
 		}
-		expectedBody += "hello world\n"
-		callCount += 1
 
+		callCount += 1
 		if callCount < 4 {
 			server.CloseClientConnections()
+			return
 		}
 	})
 	transport := &Transport{
@@ -92,7 +130,19 @@ func TestHTTPError(t *testing.T) {
 
 	var callCount int
 	var expectedBody string
-	stdin := safebuffer.NewMock()
+	stdin := &fakeStdin{safebuffer.NewMock(), &sync.Mutex{}, false}
+
+	go func() {
+		var count int
+		for count < 4 {
+			stdin.Write([]byte("hello world\n"))
+			expectedBody += "hello world\n"
+			time.Sleep(time.Millisecond)
+			count += 1
+		}
+		stdin.Close()
+	}()
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -104,12 +154,10 @@ func TestHTTPError(t *testing.T) {
 			t.Fatalf("Unexpected body. Expected %q. Got %q - Attempt %d", expectedBody, body[:len(body)], callCount)
 		}
 
+		callCount += 1
 		if callCount < 9 {
 			w.WriteHeader(http.StatusServiceUnavailable)
-
-			stdin.Write([]byte("hello world\n"))
-			expectedBody += "hello world\n"
-			callCount += 1
+			return
 		}
 	})
 	transport := &Transport{
@@ -138,27 +186,4 @@ func (s *slowBuffer) Read(p []byte) (int, error) {
 	content := []byte("hello world")
 	copy(p, content)
 	return len(content), io.EOF
-}
-
-func TestBodyReaderBlocksClosing(t *testing.T) {
-	streamer := &slowBuffer{}
-	buffer, err := ioutil.TempFile("", "busltee_buffer")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer buffer.Close()
-
-	reader, err := newBodyReader(streamer, buffer)
-	if err != nil {
-		t.Fatal(err)
-	}
-	go reader.Close()
-
-	data, err := ioutil.ReadAll(reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(data) != "hello world" {
-		t.Fatalf("Expected data to be `hello world`. Got %q", data)
-	}
 }
