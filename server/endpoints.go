@@ -61,13 +61,13 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(writer, body)
 
 	if err == io.ErrUnexpectedEOF {
-		util.CountWithData("server.pub.read.eoferror", 1, "msg=\"%v\"", err.Error())
+		util.CountWithData("server.pub.read.eoferror", 1, "msg=\"%v\" request_id=%q", err.Error(), r.Header.Get("Request-Id"))
 		return
 	}
 
 	netErr, ok := err.(net.Error)
 	if ok && netErr.Timeout() {
-		util.CountWithData("server.pub.read.timeout", 1, "msg=\"%v\"", err.Error())
+		util.CountWithData("server.pub.read.timeout", 1, "msg=\"%v\" request_id=%q", err.Error(), r.Header.Get("Request-Id"))
 		handleError(w, r, netErr)
 		return
 	}
@@ -79,6 +79,7 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	util.CountWithData("server.pub.read.end", 1, "request_id=%q", r.Header.Get("Request-Id"))
 	writer.Close()
 	// Asynchronously upload the output to our defined storage backend.
 	go storeOutput(key(r), requestURI(r), s.StorageBaseURL)
@@ -102,11 +103,12 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 
 	netErr, ok := err.(net.Error)
 	if ok && netErr.Timeout() {
-		util.CountWithData("server.sub.read.timeout", 1, "msg=\"%v\"", err.Error())
+		util.CountWithData("server.sub.read.timeout", 1, "msg=\"%v\" request_id=%q", err.Error(), r.Header.Get("Request-Id"))
 		return
 	}
 
 	if err != nil {
 		rollbar.Error(rollbar.ERR, fmt.Errorf("unhandled error: %#v", err))
 	}
+	util.CountWithData("server.sub.read.finish", 1, "msg=\"%v\" request_id=%q", err.Error(), r.Header.Get("Request-Id"))
 }
