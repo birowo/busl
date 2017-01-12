@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -81,15 +80,12 @@ func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 	return res, err
 }
 
-func newBodyReader(streamer io.Reader, buffer *os.File) (*bodyReader, error) {
+func newBodyReader(streamer io.Reader, buffer *os.File) (io.ReadCloser, error) {
 	data, err := readBuffer(buffer)
 	if err != nil {
 		return nil, err
 	}
-	return &bodyReader{
-		&sync.Mutex{},
-		io.MultiReader(data, io.TeeReader(streamer, buffer)),
-	}, nil
+	return ioutil.NopCloser(io.MultiReader(data, io.TeeReader(streamer, buffer))), nil
 }
 
 func readBuffer(b *os.File) (*bytes.Buffer, error) {
@@ -103,27 +99,4 @@ func readBuffer(b *os.File) (*bytes.Buffer, error) {
 		return nil, err
 	}
 	return bytes.NewBuffer(d), err
-}
-
-type bodyReader struct {
-	mutex  *sync.Mutex
-	reader io.Reader
-}
-
-func (b *bodyReader) Close() error {
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-	b.reader = nil
-	return nil
-}
-
-func (b *bodyReader) Read(p []byte) (int, error) {
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-
-	if b.reader == nil {
-		return 0, io.EOF
-	}
-
-	return b.reader.Read(p)
 }
