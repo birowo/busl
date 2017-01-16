@@ -31,7 +31,6 @@ func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error)
 	}
 	t.bufferName = tmpFile.Name()
 	t.mutex = &sync.Mutex{}
-	t.closed = false
 
 	go func() {
 		defer tmpFile.Close()
