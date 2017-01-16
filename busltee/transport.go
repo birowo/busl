@@ -1,7 +1,6 @@
 package busltee
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -20,8 +19,9 @@ type Transport struct {
 	Transport     http.RoundTripper
 	SleepDuration time.Duration
 
-	body   io.ReadCloser
-	buffer *os.File
+	bufferName string
+	mutex      *sync.Mutex
+	closed     bool
 }
 
 func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error) {
@@ -29,9 +29,19 @@ func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error)
 	if err != nil {
 		return nil, err
 	}
-	defer tmpFile.Close()
-	t.buffer = tmpFile
-	t.body = req.Body
+	t.bufferName = tmpFile.Name()
+	t.mutex = &sync.Mutex{}
+
+	go func() {
+		defer tmpFile.Close()
+		defer t.Close()
+
+		tee := io.TeeReader(req.Body, tmpFile)
+		_, err := ioutil.ReadAll(tee)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	if t.Transport == nil {
 		t.Transport = &http.Transport{}
@@ -43,10 +53,27 @@ func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error)
 }
 
 func (t *Transport) tries(req *http.Request) (*http.Response, error) {
-	bodyReader, err := newBodyReader(t.body, t.buffer)
+	res, err := t.runRequest(req)
+
+	if err != nil || res.StatusCode/100 != 2 {
+		if t.retries < t.MaxRetries {
+			time.Sleep(t.SleepDuration)
+			t.retries += 1
+			return t.tries(req)
+		}
+	} else {
+		t.retries = 0
+	}
+	return res, err
+}
+
+func (t *Transport) runRequest(req *http.Request) (*http.Response, error) {
+	var statusCode int
+	bodyReader, err := t.newBodyReader()
 	if err != nil {
 		return nil, err
 	}
+
 	newReq, err := http.NewRequest(req.Method, req.URL.String(), bodyReader)
 	newReq.Header = req.Header
 
@@ -56,7 +83,7 @@ func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 		req.URL,
 	)
 	res, err := t.Transport.RoundTrip(newReq)
-	var statusCode int
+	newReq.Body.Close()
 	if res != nil {
 		statusCode = res.StatusCode
 	}
@@ -67,63 +94,43 @@ func (t *Transport) tries(req *http.Request) (*http.Response, error) {
 		err,
 		statusCode,
 	)
-	newReq.Body.Close()
-
-	if err != nil || statusCode/100 != 2 {
-		if t.retries < t.MaxRetries {
-			time.Sleep(t.SleepDuration)
-			t.retries += 1
-			return t.tries(newReq)
-		}
-	} else {
-		t.retries = 0
-	}
 	return res, err
 }
 
-func newBodyReader(streamer io.Reader, buffer *os.File) (*bodyReader, error) {
-	data, err := readBuffer(buffer)
+func (t *Transport) newBodyReader() (io.ReadCloser, error) {
+	reader, err := os.Open(t.bufferName)
 	if err != nil {
 		return nil, err
 	}
-	return &bodyReader{
-		&sync.Mutex{},
-		io.MultiReader(data, io.TeeReader(streamer, buffer)),
-	}, nil
+	return &bodyReader{reader, t}, nil
 }
 
-func readBuffer(b *os.File) (*bytes.Buffer, error) {
-	f, err := os.Open(b.Name())
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	d, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-	return bytes.NewBuffer(d), err
+func (t *Transport) Close() error {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.closed = true
+	return nil
+}
+func (t *Transport) isClosed() bool {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	return t.closed
 }
 
 type bodyReader struct {
-	mutex  *sync.Mutex
-	reader io.Reader
-}
-
-func (b *bodyReader) Close() error {
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-	b.reader = nil
-	return nil
+	io.ReadCloser
+	t *Transport
 }
 
 func (b *bodyReader) Read(p []byte) (int, error) {
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
+	for {
+		i, err := b.ReadCloser.Read(p)
+		if err == io.EOF && !b.t.isClosed() {
+			err = nil
+		}
 
-	if b.reader == nil {
-		return 0, io.EOF
+		if i > 0 || err != nil {
+			return i, err
+		}
 	}
-
-	return b.reader.Read(p)
 }

@@ -112,7 +112,7 @@ func TestRun(t *testing.T) {
 	select {
 	case result := <-post:
 		if string(result) != "hello" {
-			t.Fatalf("Expected POST body to be `hello`, got %s", result)
+			t.Fatalf("Expected POST body to be `hello`, got %q", result)
 		}
 	case <-time.After(1 * time.Second):
 		t.Fatalf("POST channel got no response")
