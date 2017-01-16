@@ -34,10 +34,10 @@ func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error)
 
 	go func() {
 		defer tmpFile.Close()
+		defer t.Close()
 
 		tee := io.TeeReader(req.Body, tmpFile)
 		_, err := ioutil.ReadAll(tee)
-		t.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
