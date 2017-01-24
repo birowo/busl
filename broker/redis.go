@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -14,10 +15,40 @@ import (
 var (
 	redisURL           = flag.String("redisUrl", os.Getenv("REDIS_URL"), "URL of the redis server")
 	redisServer        *url.URL
-	redisPool          *redis.Pool
+	redisPool          *Pool
 	redisKeyExpire     = 60 // redis uses seconds for EXPIRE
 	redisChannelExpire = redisKeyExpire * 60
 )
+
+type Pool struct {
+	*redis.Pool
+
+	m *sync.Mutex
+	c int
+}
+
+func (p *Pool) Get() Conn {
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	p.c += 1
+	util.CountWithData("redis.conn.get", 1, "conn_count=%d, caller=%q#%d", p.c)
+	return Conn{p.Pool.Get(), p}
+}
+
+type Conn struct {
+	redis.Conn
+	p *Pool
+}
+
+func (c Conn) Close() error {
+	c.p.m.Lock()
+	defer c.p.m.Unlock()
+
+	c.p.c -= 1
+	util.CountWithData("redis.conn.release", 1, "conn_count=%d", c.p.c)
+	return c.Conn.Close()
+}
 
 func init() {
 	flag.Parse()
@@ -28,11 +59,11 @@ func init() {
 	defer conn.Close()
 }
 
-func newPool(server *url.URL) *redis.Pool {
+func newPool(server *url.URL) *Pool {
 	cleanServerURL := *server
 	cleanServerURL.User = nil
 	log.Printf("connecting to redis: %s", cleanServerURL.String())
-	return &redis.Pool{
+	pool := &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 4 * time.Minute,
 		Dial: func() (c redis.Conn, err error) {
@@ -61,6 +92,8 @@ func newPool(server *url.URL) *redis.Pool {
 			return err
 		},
 	}
+
+	return &Pool{pool, &sync.Mutex{}, 0}
 }
 
 type channel string
