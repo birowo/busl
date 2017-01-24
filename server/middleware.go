@@ -147,10 +147,12 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 
 	o, err := offset(r)
 	if err != nil {
+		rd.Close()
 		return nil, err
 	}
 
 	if broker.NoContent(rd, o) {
+		rd.Close()
 		return nil, errNoContent
 	}
 
