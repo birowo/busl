@@ -174,11 +174,26 @@ func (r *reader) fetch(length int) ([]byte, error) {
 
 	start, end := r.offset, r.offset+int64(length)
 
-	conn.Send("MULTI")
-	conn.Send("GETRANGE", r.channel.id(), start, end-1)
-	conn.Send("STRLEN", r.channel.id())
-	conn.Send("EXISTS", r.channel.doneID())
-	conn.Send("EXPIRE", r.channel.id(), redisChannelExpire)
+	err := conn.Send("MULTI")
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("GETRANGE", r.channel.id(), start, end-1)
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("STRLEN", r.channel.id())
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("EXISTS", r.channel.doneID())
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("EXPIRE", r.channel.id(), redisChannelExpire)
+	if err != nil {
+		return nil, err
+	}
 
 	list, err := redis.Values(conn.Do("EXEC"))
 	if err != nil {
