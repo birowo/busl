@@ -24,7 +24,7 @@ type Pool struct {
 	*redis.Pool
 
 	mu *sync.Mutex
-	c  int
+	c  int64
 }
 
 func (p *Pool) Get() Conn {
@@ -32,7 +32,7 @@ func (p *Pool) Get() Conn {
 	defer p.mu.Unlock()
 
 	p.c += 1
-	util.CountWithData("redis.conn.get", 1, "conn_count=%d, caller=%q#%d", p.c)
+	util.SampleWithData("redis.connections", p.c, "at=acquire")
 	return Conn{p.Pool.Get(), p}
 }
 
@@ -46,7 +46,7 @@ func (c Conn) Close() error {
 	defer c.p.mu.Unlock()
 
 	c.p.c -= 1
-	util.CountWithData("redis.conn.release", 1, "conn_count=%d", c.p.c)
+	util.SampleWithData("redis.connections", c.p.c, "at=release")
 	return c.Conn.Close()
 }
 
