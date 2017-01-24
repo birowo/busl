@@ -181,9 +181,21 @@ func (r *reader) fetch(length int) ([]byte, error) {
 	conn.Send("EXPIRE", r.channel.id(), redisChannelExpire)
 
 	list, err := redis.Values(conn.Do("EXEC"))
+	if err != nil {
+		return nil, err
+	}
 	data, err := redis.Bytes(list[0], err)
+	if err != nil {
+		return nil, err
+	}
 	size, err := redis.Int64(list[1], err)
+	if err != nil {
+		return nil, err
+	}
 	done, err := redis.Bool(list[2], err)
+	if err != nil {
+		return nil, err
+	}
 
 	if r.buffered = end < size; !r.buffered && done {
 		err = io.EOF
