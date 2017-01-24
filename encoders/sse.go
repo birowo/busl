@@ -13,17 +13,17 @@ const (
 )
 
 type sseEncoder struct {
-	reader io.Reader // stores the original reader
-	offset int64     // offset for Seek purposes
+	io.ReadCloser       // stores the original reader
+	offset        int64 // offset for Seek purposes
 }
 
 // NewSSEEncoder creates a new server-sent event encoder
-func NewSSEEncoder(r io.Reader) io.ReadSeeker {
-	return &sseEncoder{reader: r}
+func NewSSEEncoder(r io.ReadCloser) Encoder {
+	return &sseEncoder{ReadCloser: r}
 }
 
 func (r *sseEncoder) Seek(offset int64, whence int) (n int64, err error) {
-	if seeker, ok := r.reader.(io.ReadSeeker); ok {
+	if seeker, ok := r.ReadCloser.(io.ReadSeeker); ok {
 		r.offset, err = seeker.Seek(offset, whence)
 	} else {
 		// The underlying reader doesn't support seeking, but
@@ -43,7 +43,7 @@ func (r *sseEncoder) Seek(offset int64, whence int) (n int64, err error) {
 // that len(p) is always greater than the potential
 // length of data to be read.
 func (r *sseEncoder) Read(p []byte) (n int, err error) {
-	n, err = r.reader.Read(p)
+	n, err = r.ReadCloser.Read(p)
 
 	if n > 0 {
 		buf := format(r.offset, p[:n])
