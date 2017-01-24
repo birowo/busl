@@ -44,7 +44,7 @@ func TestTextNonSeekableReader(t *testing.T) {
 	r.Seek(10, 0)
 
 	// Use LimitReader to hide the Seeker interface
-	lr := &limitedReadCloser{io.LimitedReader{r, 11}}
+	lr := &limitedReadCloser{io.LimitReader(r, 11).(*io.LimitedReader)}
 
 	enc := NewTextEncoder(lr)
 	enc.Seek(10, 0)

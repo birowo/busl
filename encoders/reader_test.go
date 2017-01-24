@@ -11,7 +11,7 @@ func (r *readSeekerCloser) Close() error {
 }
 
 type limitedReadCloser struct {
-	io.LimitedReader
+	*io.LimitedReader
 }
 
 func (r *limitedReadCloser) Close() error {
