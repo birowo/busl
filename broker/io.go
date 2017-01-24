@@ -174,16 +174,43 @@ func (r *reader) fetch(length int) ([]byte, error) {
 
 	start, end := r.offset, r.offset+int64(length)
 
-	conn.Send("MULTI")
-	conn.Send("GETRANGE", r.channel.id(), start, end-1)
-	conn.Send("STRLEN", r.channel.id())
-	conn.Send("EXISTS", r.channel.doneID())
-	conn.Send("EXPIRE", r.channel.id(), redisChannelExpire)
+	err := conn.Send("MULTI")
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("GETRANGE", r.channel.id(), start, end-1)
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("STRLEN", r.channel.id())
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("EXISTS", r.channel.doneID())
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Send("EXPIRE", r.channel.id(), redisChannelExpire)
+	if err != nil {
+		return nil, err
+	}
 
 	list, err := redis.Values(conn.Do("EXEC"))
+	if err != nil {
+		return nil, err
+	}
 	data, err := redis.Bytes(list[0], err)
+	if err != nil {
+		return nil, err
+	}
 	size, err := redis.Int64(list[1], err)
+	if err != nil {
+		return nil, err
+	}
 	done, err := redis.Bool(list[2], err)
+	if err != nil {
+		return nil, err
+	}
 
 	if r.buffered = end < size; !r.buffered && done {
 		err = io.EOF
