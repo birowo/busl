@@ -19,3 +19,13 @@ func CountWithData(metric string, count int64, extraData string, v ...interface{
 		log.Printf("count#%s=%d %s", metric, count, fmt.Sprintf(extraData, v...))
 	}
 }
+
+func Sample(metric string, value int64) { SampleWithData(metric, value, "") }
+
+func SampleWithData(metric string, value int64, extraData string, v ...interface{}) {
+	if extraData == "" {
+		log.Printf("sample#%s=%d", metric, value)
+	} else {
+		log.Printf("sample#%s=%d %s", metric, value, fmt.Sprintf(extraData, v...))
+	}
+}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -148,14 +147,16 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 
 	o, err := offset(r)
 	if err != nil {
+		rd.Close()
 		return nil, err
 	}
 
 	if broker.NoContent(rd, o) {
+		rd.Close()
 		return nil, errNoContent
 	}
 
-	var encoder io.ReadSeeker
+	var encoder encoders.Encoder
 	if r.Header.Get("Accept") == "text/event-stream" {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -168,12 +169,10 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 	} else {
 		encoder = encoders.NewTextEncoder(rd)
 	}
-
 	encoder.Seek(o, io.SeekStart)
-	rd = ioutil.NopCloser(encoder)
 
 	done := w.(http.CloseNotifier).CloseNotify()
-	return newKeepAliveReader(rd, ack, s.HeartbeatDuration, done), nil
+	return newKeepAliveReader(encoder, ack, s.HeartbeatDuration, done), nil
 }
 
 func storeOutput(channel string, requestURI string, storageBase string) {

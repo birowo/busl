@@ -30,7 +30,7 @@ var (
 
 func TestSSENoNewline(t *testing.T) {
 	for _, data := range testSSEData {
-		r := strings.NewReader(data.input)
+		r := &readSeekerCloser{strings.NewReader(data.input)}
 		enc := NewSSEEncoder(r)
 		enc.Seek(data.offset, 0)
 		assert.Equal(t, data.output, readstring(enc))
@@ -41,11 +41,11 @@ func TestSSENonSeekableReader(t *testing.T) {
 	// Seek the underlying reader before
 	// passing to LimitReader: comparably similar
 	// to scenario when reading from an http.Response
-	r := strings.NewReader("hello world")
+	r := &readSeekerCloser{strings.NewReader("hello world")}
 	r.Seek(10, 0)
 
 	// Use LimitReader to hide the Seeker interface
-	lr := io.LimitReader(r, 11)
+	lr := &limitedReadCloser{io.LimitReader(r, 11).(*io.LimitedReader)}
 
 	enc := NewSSEEncoder(lr)
 	enc.Seek(10, io.SeekStart)
