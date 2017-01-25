@@ -28,12 +28,23 @@ type pool struct {
 }
 
 func (p *pool) Get() Conn {
+	n := p.incCounter()
+	util.SampleWithData("redis.connections", n, "at=acquire")
+	return Conn{p.Pool.Get(), p}
+}
+
+func (p *pool) incCounter() int64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
 	p.c += 1
-	util.SampleWithData("redis.connections", p.c, "at=acquire")
-	return Conn{p.Pool.Get(), p}
+	return p.c
+}
+
+func (p *pool) decCounter() int64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.c -= 1
+	return p.c
 }
 
 type Conn struct {
@@ -42,11 +53,8 @@ type Conn struct {
 }
 
 func (c Conn) Close() error {
-	c.p.mu.Lock()
-	defer c.p.mu.Unlock()
-
-	c.p.c -= 1
-	util.SampleWithData("redis.connections", c.p.c, "at=release")
+	n := c.p.decCounter()
+	util.SampleWithData("redis.connections", n, "at=release")
 	return c.Conn.Close()
 }
 
