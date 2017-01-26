@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -22,17 +22,12 @@ var (
 
 type pool struct {
 	*redis.Pool
-
-	mu *sync.Mutex
-	c  int64
+	c int64
 }
 
 func (p *pool) Get() Conn {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.c += 1
-	util.SampleWithData("redis.connections", p.c, "at=acquire")
+	n := atomic.AddInt64(&p.c, 1)
+	util.SampleWithData("redis.connections", n, "at=acquire")
 	return Conn{p.Pool.Get(), p}
 }
 
@@ -42,11 +37,8 @@ type Conn struct {
 }
 
 func (c Conn) Close() error {
-	c.p.mu.Lock()
-	defer c.p.mu.Unlock()
-
-	c.p.c -= 1
-	util.SampleWithData("redis.connections", c.p.c, "at=release")
+	n := atomic.AddInt64(&c.p.c, -1)
+	util.SampleWithData("redis.connections", n, "at=release")
 	return c.Conn.Close()
 }
 
@@ -93,7 +85,7 @@ func newPool(server *url.URL) *pool {
 		},
 	}
 
-	return &pool{p, &sync.Mutex{}, 0}
+	return &pool{p, 0}
 }
 
 type channel string
