@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -55,7 +56,7 @@ func (l *ResponseLogger) requestID() (id string) {
 // WriteLog logs the response
 func (l *ResponseLogger) WriteLog() {
 	maskedStatus := strconv.Itoa(l.status/100) + "xx"
-	log.Printf("count#http.status.%s=1 request_id=%s", maskedStatus, l.requestID())
+	CountWithData(fmt.Sprintf("http.status.%s", maskedStatus), 1, "request_id=%s", l.requestID())
 	log.Printf("method=%s path=\"%s\" host=\"%s\" fwd=\"%s\" status=%d user_agent=\"%s\" request_id=%s",
 		l.request.Method, l.request.URL.Path, l.request.Host, l.request.Header.Get("X-Forwarded-For"), l.status, l.request.UserAgent(), l.requestID())
 }
