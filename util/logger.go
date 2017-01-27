@@ -11,7 +11,7 @@ const prefix = "busl"
 const defaultDomain = "development"
 
 func init() {
-	log.SetPrefix(fmt.Sprintf("%s source=%s pid=%v ", prefix, source(), os.Getpid()))
+	log.SetPrefix(fmt.Sprintf("app=%s source=%s pid=%v ", prefix, source(), os.Getpid()))
 	log.SetFlags(0)
 }
 
