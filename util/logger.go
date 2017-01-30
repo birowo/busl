@@ -38,6 +38,6 @@ func reverseDNS(domain string) string {
 }
 
 func source() string {
-	domain := env("HEROKU_DOMAIN", defaultDomain)
+	domain := env("HEROKU_HOST", defaultDomain)
 	return reverseDNS(fmt.Sprintf("%s.%s", prefix, domain)) + "." + os.Getenv("DYNO")
 }
