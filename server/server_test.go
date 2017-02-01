@@ -19,7 +19,7 @@ var baseServer = NewServer(&Config{
 	EnforceHTTPS:      false,
 	Credentials:       "",
 	HeartbeatDuration: time.Second,
-	StorageBaseURL:    func() string { return "" },
+	StorageBaseURL:    func(*http.Request) string { return "" },
 })
 
 func Test410(t *testing.T) {
@@ -343,9 +343,9 @@ func TestSubGoneWithBackend(t *testing.T) {
 	storage, get, _ := fileServer(uuid)
 	defer storage.Close()
 
-	baseServer.StorageBaseURL = func() string { return storage.URL }
+	baseServer.StorageBaseURL = func(*http.Request) string { return storage.URL }
 	defer func() {
-		baseServer.StorageBaseURL = func() string { return "" }
+		baseServer.StorageBaseURL = func(*http.Request) string { return "" }
 	}()
 
 	server := httptest.NewServer(baseServer.router())
@@ -368,9 +368,9 @@ func TestPutWithBackend(t *testing.T) {
 	storage, _, put := fileServer(uuid)
 	defer storage.Close()
 
-	baseServer.StorageBaseURL = func() string { return storage.URL }
+	baseServer.StorageBaseURL = func(*http.Request) string { return storage.URL }
 	defer func() {
-		baseServer.StorageBaseURL = func() string { return "" }
+		baseServer.StorageBaseURL = func(*http.Request) string { return "" }
 	}()
 
 	server := httptest.NewServer(baseServer.router())

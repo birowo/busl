@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -69,7 +70,7 @@ func parseFlags() (*cmdConfig, *server.Config, error) {
 	return cmdConf, httpConf, nil
 }
 
-func getStorageBaseURL() string {
+func getStorageBaseURL(*http.Request) string {
 	return os.Getenv("STORAGE_BASE_URL")
 }
 
