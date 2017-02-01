@@ -82,7 +82,7 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 	util.CountWithData("server.pub.read.end", 1, "request_id=%q", r.Header.Get("Request-Id"))
 	writer.Close()
 	// Asynchronously upload the output to our defined storage backend.
-	go storeOutput(key(r), requestURI(r), s.StorageBaseURL)
+	go storeOutput(key(r), requestURI(r), s.StorageBaseURL())
 }
 
 func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {

@@ -121,7 +121,7 @@ func (s *Server) newStorageReader(w http.ResponseWriter, r *http.Request) (io.Re
 
 	// Not cached in the broker anymore, try the storage backend as a fallback.
 	if err == broker.ErrNotRegistered {
-		return storage.Get(requestURI(r), s.StorageBaseURL, o)
+		return storage.Get(requestURI(r), s.StorageBaseURL(), o)
 	}
 
 	if o > 0 {

@@ -62,7 +62,7 @@ func parseFlags() (*cmdConfig, *server.Config, error) {
 	httpConf.Credentials = os.Getenv("CREDS")
 	httpConf.EnforceHTTPS = os.Getenv("ENFORCE_HTTPS") == "1"
 	flag.DurationVar(&httpConf.HeartbeatDuration, "subscribeHeartbeatDuration", time.Second*10, "Heartbeat interval for HTTP stream subscriptions.")
-	httpConf.StorageBaseURL = os.Getenv("STORAGE_BASE_URL")
+	httpConf.StorageBaseURL = func() string { return os.Getenv("STORAGE_BASE_URL") }
 
 	flag.Parse()
 
