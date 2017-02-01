@@ -7,13 +7,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/heroku/busl/server"
 	"github.com/heroku/rollbar"
 )
+
+var nonWordCharacters = regexp.MustCompile(`\W`)
 
 type cmdConfig struct {
 	RollbarEnvironment string
@@ -70,7 +74,12 @@ func parseFlags() (*cmdConfig, *server.Config, error) {
 	return cmdConf, httpConf, nil
 }
 
-func getStorageBaseURL(*http.Request) string {
+func getStorageBaseURL(r *http.Request) string {
+	prefix := strings.ToUpper(nonWordCharacters.ReplaceAllString(r.Host, "_"))
+	if v := os.Getenv(fmt.Sprintf("%v_STORAGE_BASE_URL", prefix)); v != "" {
+		return v
+	}
+
 	return os.Getenv("STORAGE_BASE_URL")
 }
 
