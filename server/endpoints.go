@@ -18,7 +18,7 @@ func (s *Server) createStream(w http.ResponseWriter, r *http.Request) {
 
 	if err := registrar.Register(key(r)); err != nil {
 		http.Error(w, "Unable to create stream. Please try again.", http.StatusServiceUnavailable)
-		rollbar.Error(rollbar.ERR, fmt.Errorf("unable to register stream: %#v", err))
+		rollbar.Error(rollbar.ERR, err)
 		util.CountWithData("put.create.fail", 1, "error=%s", err)
 		return
 	}
@@ -75,7 +75,7 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%#v", err)
 		http.Error(w, "Unhandled error, please try again.", http.StatusInternalServerError)
-		rollbar.Error(rollbar.ERR, fmt.Errorf("unhandled error: %#v", err))
+		rollbar.Error(rollbar.ERR, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		rollbar.Error(rollbar.ERR, fmt.Errorf("unhandled error: %#v", err))
+		rollbar.Error(rollbar.ERR, err)
 	}
 	util.CountWithData("server.sub.read.finish", 1, "msg=%q request_id=%q", err, r.Header.Get("Request-Id"))
 }
