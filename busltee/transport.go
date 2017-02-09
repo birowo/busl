@@ -125,13 +125,13 @@ type bodyReader struct {
 
 func (b *bodyReader) Read(p []byte) (int, error) {
 	for {
-		i, err := b.ReadCloser.Read(p)
+		n, err := b.ReadCloser.Read(p)
 		if err == io.EOF && !b.t.isClosed() {
 			err = nil
 		}
 
-		if i > 0 || err != nil {
-			return i, err
+		if n > 0 || err != nil {
+			return n, err
 		}
 	}
 }
