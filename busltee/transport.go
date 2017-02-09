@@ -104,7 +104,7 @@ func (t *Transport) newBodyReader() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &bodyReader{reader, t}, nil
+	return &bodyReader{reader, t, false}, nil
 }
 
 func (t *Transport) Close() error {
@@ -139,13 +139,19 @@ func (w *broadcastingWriter) Write(p []byte) (int, error) {
 
 type bodyReader struct {
 	io.ReadCloser
-	t *Transport
+	t      *Transport
+	closed bool
+}
+
+func (b *bodyReader) Close() error {
+	b.closed = true
+	return b.ReadCloser.Close()
 }
 
 func (b *bodyReader) Read(p []byte) (int, error) {
 	for {
 		n, err := b.ReadCloser.Read(p)
-		if err == io.EOF && !b.t.isClosed() {
+		if err == io.EOF && !b.isClosed() {
 			err = nil
 		}
 
@@ -155,4 +161,8 @@ func (b *bodyReader) Read(p []byte) (int, error) {
 
 		b.t.cond.Wait()
 	}
+}
+
+func (b *bodyReader) isClosed() bool {
+	return b.closed || b.t.isClosed()
 }
