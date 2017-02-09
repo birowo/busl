@@ -20,6 +20,7 @@ type Transport struct {
 	SleepDuration time.Duration
 
 	bufferName string
+	cond       *sync.Cond
 	mutex      *sync.Mutex
 	closed     bool
 }
@@ -30,13 +31,14 @@ func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error)
 		return nil, err
 	}
 	t.bufferName = tmpFile.Name()
+	t.cond = sync.NewCond(&nopLocker{})
 	t.mutex = &sync.Mutex{}
 
 	go func() {
 		defer tmpFile.Close()
 		defer t.Close()
 
-		tee := io.TeeReader(req.Body, tmpFile)
+		tee := io.TeeReader(req.Body, &broadcastingWriter{tmpFile, t.cond})
 		_, err := ioutil.ReadAll(tee)
 		if err != nil {
 			log.Fatal(err)
@@ -109,12 +111,30 @@ func (t *Transport) Close() error {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	t.closed = true
+	t.cond.Broadcast()
 	return nil
 }
+
 func (t *Transport) isClosed() bool {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	return t.closed
+}
+
+type nopLocker struct{}
+
+func (*nopLocker) Lock()   {}
+func (*nopLocker) Unlock() {}
+
+type broadcastingWriter struct {
+	io.Writer
+	cond *sync.Cond
+}
+
+func (w *broadcastingWriter) Write(p []byte) (int, error) {
+	n, err := w.Writer.Write(p)
+	w.cond.Broadcast()
+	return n, err
 }
 
 type bodyReader struct {
@@ -124,13 +144,15 @@ type bodyReader struct {
 
 func (b *bodyReader) Read(p []byte) (int, error) {
 	for {
-		i, err := b.ReadCloser.Read(p)
+		n, err := b.ReadCloser.Read(p)
 		if err == io.EOF && !b.t.isClosed() {
 			err = nil
 		}
 
-		if i > 0 || err != nil {
-			return i, err
+		if n > 0 || err != nil {
+			return n, err
 		}
+
+		b.t.cond.Wait()
 	}
 }
