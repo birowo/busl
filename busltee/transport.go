@@ -111,6 +111,7 @@ func (t *Transport) Close() error {
 	t.closed = true
 	return nil
 }
+
 func (t *Transport) isClosed() bool {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
