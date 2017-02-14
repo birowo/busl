@@ -39,14 +39,17 @@ func (r *sseEncoder) Seek(offset int64, whence int) (n int64, err error) {
 	return r.offset, err
 }
 
-// FIXME: this version is simplified and assumes
-// that len(p) is always greater than the potential
-// length of data to be read.
 func (r *sseEncoder) Read(p []byte) (n int, err error) {
-	n, err = r.ReadCloser.Read(p)
+	// We assume SSE won't add more than twice the amount of data we get
+	q := make([]byte, len(p)/2)
+	n, err = r.ReadCloser.Read(q)
 
 	if n > 0 {
-		buf := format(r.offset, p[:n])
+		buf := format(r.offset, q[:n])
+		if len(buf) > len(p) {
+			return 0, errors.New("buffer length cannot be higher than bytes array")
+		}
+
 		r.offset += int64(n)
 		n = copy(p, buf)
 	}
