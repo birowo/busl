@@ -46,6 +46,10 @@ func (r *sseEncoder) Read(p []byte) (n int, err error) {
 
 	if n > 0 {
 		buf := format(r.offset, q[:n])
+		if len(buf) > len(p) {
+			return 0, errors.New("buffer length cannot be higher than bytes array")
+		}
+
 		r.offset += int64(n)
 		n = copy(p, buf)
 	}
