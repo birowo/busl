@@ -144,8 +144,11 @@ type bodyReader struct {
 }
 
 func (b *bodyReader) Close() error {
-	b.closed = true
-	return b.ReadCloser.Close()
+	err := b.ReadCloser.Close()
+	if err == nil {
+		b.closed = true
+	}
+	return err
 }
 
 func (b *bodyReader) Read(p []byte) (int, error) {
