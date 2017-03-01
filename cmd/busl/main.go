@@ -4,15 +4,20 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/heroku/busl/server"
 	"github.com/heroku/rollbar"
 )
+
+var nonWordCharacters = regexp.MustCompile(`\W`)
 
 type cmdConfig struct {
 	RollbarEnvironment string
@@ -62,11 +67,20 @@ func parseFlags() (*cmdConfig, *server.Config, error) {
 	httpConf.Credentials = os.Getenv("CREDS")
 	httpConf.EnforceHTTPS = os.Getenv("ENFORCE_HTTPS") == "1"
 	flag.DurationVar(&httpConf.HeartbeatDuration, "subscribeHeartbeatDuration", time.Second*10, "Heartbeat interval for HTTP stream subscriptions.")
-	httpConf.StorageBaseURL = os.Getenv("STORAGE_BASE_URL")
+	httpConf.StorageBaseURL = getStorageBaseURL
 
 	flag.Parse()
 
 	return cmdConf, httpConf, nil
+}
+
+func getStorageBaseURL(r *http.Request) string {
+	prefix := strings.ToUpper(nonWordCharacters.ReplaceAllString(r.Host, "_"))
+	if v := os.Getenv(fmt.Sprintf("%v_STORAGE_BASE_URL", prefix)); v != "" {
+		return v
+	}
+
+	return os.Getenv("STORAGE_BASE_URL")
 }
 
 func awaitSignals(signals ...os.Signal) <-chan struct{} {

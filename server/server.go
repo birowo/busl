@@ -14,7 +14,7 @@ type Config struct {
 	EnforceHTTPS      bool
 	Credentials       string
 	HeartbeatDuration time.Duration
-	StorageBaseURL    string
+	StorageBaseURL    func(*http.Request) string
 }
 
 // Server is a launchable api listener
