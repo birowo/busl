@@ -62,6 +62,13 @@ func (s *Server) addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
 		if origin := r.Header.Get("Origin"); origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
+
+		requestID := r.Header.Get("Request-ID")
+		if requestID == "" {
+			requestID, _ = util.NewUUID()
+		}
+		w.Header().Set("Request-ID", requestID)
+
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 		w.Header().Set("Access-Control-Expose-Headers", "Cache-Control, Content-Type, Expires, Last-Modified")
