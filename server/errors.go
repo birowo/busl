@@ -7,6 +7,7 @@ import (
 	"github.com/heroku/busl/broker"
 	"github.com/heroku/busl/storage"
 	"github.com/heroku/busl/util"
+	"github.com/heroku/rollbar"
 )
 
 var errNoContent = errors.New("No Content")
@@ -51,4 +52,11 @@ func handleError(w http.ResponseWriter, r *http.Request, err error) {
 		util.CountWithData("server.handleError", 1, "error=%s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+func logError(req *http.Request, err error) {
+	rollbar.ErrorWithExtras(rollbar.ERR, err, map[string]interface{}{
+		"request_id": req.Header.Get("Request-Id"),
+		"key":        key(req),
+	})
 }
