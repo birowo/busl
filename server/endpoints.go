@@ -10,7 +10,6 @@ import (
 
 	"github.com/heroku/busl/broker"
 	"github.com/heroku/busl/util"
-	"github.com/heroku/rollbar"
 )
 
 func (s *Server) createStream(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +17,7 @@ func (s *Server) createStream(w http.ResponseWriter, r *http.Request) {
 
 	if err := registrar.Register(key(r)); err != nil {
 		http.Error(w, "Unable to create stream. Please try again.", http.StatusServiceUnavailable)
-		rollbar.Error(rollbar.ERR, err)
+		logError(r, err)
 		util.CountWithData("put.create.fail", 1, "error=%s", err)
 		return
 	}
@@ -75,7 +74,7 @@ func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%#v", err)
 		http.Error(w, "Unhandled error, please try again.", http.StatusInternalServerError)
-		rollbar.Error(rollbar.ERR, err)
+		logError(r, err)
 		return
 	}
 
@@ -108,7 +107,7 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		rollbar.Error(rollbar.ERR, err)
+		logError(r, err)
 	}
 	util.CountWithData("server.sub.read.finish", 1, "msg=%q request_id=%q", err, r.Header.Get("Request-Id"))
 }
