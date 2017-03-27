@@ -334,7 +334,9 @@ func TestPut(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, http.StatusCreated)
 
 	registrar := broker.NewRedisRegistrar()
-	assert.True(t, registrar.IsRegistered("1/2/3"))
+	r, err := registrar.IsRegistered("1/2/3")
+	assert.Nil(t, err)
+	assert.True(t, r)
 }
 
 func TestSubGoneWithBackend(t *testing.T) {

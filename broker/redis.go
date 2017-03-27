@@ -132,7 +132,7 @@ func (rr *RedisRegistrar) Register(channelName string) (err error) {
 }
 
 // IsRegistered checks whether a channel name is registered
-func (rr *RedisRegistrar) IsRegistered(channelName string) (registered bool) {
+func (rr *RedisRegistrar) IsRegistered(channelName string) (registered bool, err error) {
 	conn := redisPool.Get()
 	defer conn.Close()
 
@@ -141,10 +141,10 @@ func (rr *RedisRegistrar) IsRegistered(channelName string) (registered bool) {
 	exists, err := redis.Bool(conn.Do("EXISTS", channel.id()))
 	if err != nil {
 		util.CountWithData("RedisRegistrar.IsRegistered.error", 1, "error=%s", err)
-		return false
+		return false, err
 	}
 
-	return exists
+	return exists, nil
 }
 
 // Get returns a key value

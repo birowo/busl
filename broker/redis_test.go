@@ -17,12 +17,17 @@ func newRegUUID() (*RedisRegistrar, string) {
 func TestRegisteredIsRegistered(t *testing.T) {
 	reg, uuid := newRegUUID()
 	reg.Register(uuid)
-	assert.True(t, reg.IsRegistered(uuid))
+
+	r, err := reg.IsRegistered(uuid)
+	assert.Nil(t, err)
+	assert.True(t, r)
 }
 
 func TestUnregisteredIsNotRegistered(t *testing.T) {
 	reg, uuid := newRegUUID()
-	assert.False(t, reg.IsRegistered(uuid))
+	r, err := reg.IsRegistered(uuid)
+	assert.Nil(t, err)
+	assert.False(t, r)
 }
 
 func TestUnregisteredErrNotRegistered(t *testing.T) {
