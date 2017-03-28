@@ -21,7 +21,12 @@ var (
 
 // NewWriter creates a new redis channel writer
 func NewWriter(key string) (io.WriteCloser, error) {
-	if !NewRedisRegistrar().IsRegistered(key) {
+	r, err := NewRedisRegistrar().IsRegistered(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if !r {
 		return nil, ErrNotRegistered
 	}
 
@@ -66,7 +71,12 @@ type reader struct {
 
 // NewReader creates a new redis channel reader
 func NewReader(key string) (io.ReadCloser, error) {
-	if !NewRedisRegistrar().IsRegistered(key) {
+	r, err := NewRedisRegistrar().IsRegistered(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if !r {
 		return nil, ErrNotRegistered
 	}
 
