@@ -49,6 +49,7 @@ func handleError(w http.ResponseWriter, r *http.Request, err error) {
 		w.WriteHeader(http.StatusNoContent)
 
 	default:
+		logError(r, err)
 		util.CountWithData("server.handleError", 1, "error=%s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}

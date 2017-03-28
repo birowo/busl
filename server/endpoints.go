@@ -17,8 +17,8 @@ func (s *Server) createStream(w http.ResponseWriter, r *http.Request) {
 
 	if err := registrar.Register(key(r)); err != nil {
 		http.Error(w, "Unable to create stream. Please try again.", http.StatusServiceUnavailable)
-		logError(r, err)
 		util.CountWithData("put.create.fail", 1, "error=%s", err)
+		handleError(w, r, err)
 		return
 	}
 	util.Count("put.create.success")
