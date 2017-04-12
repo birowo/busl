@@ -460,3 +460,23 @@ func fileServer(id string) (*httptest.Server, chan []byte, chan []byte) {
 	server := httptest.NewServer(mux)
 	return server, get, put
 }
+
+func TestCloseStream(t *testing.T) {
+	server := httptest.NewServer(baseServer.router())
+	defer server.Close()
+
+	client := &http.Client{Transport: &http.Transport{}}
+
+	uuid, _ := util.NewUUID()
+	url := server.URL + "/streams/" + uuid
+	// curl -XPUT <url>/streams/<uuid>
+	request, _ := http.NewRequest("PUT", url, nil)
+	resp, err := client.Do(request)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+
+	req, _ := http.NewRequest("DELETE", server.URL+"/streams/"+uuid, nil)
+	r, err := client.Do(req)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, r.StatusCode)
+}

@@ -111,3 +111,20 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 	}
 	util.CountWithData("server.sub.read.finish", 1, "msg=%q request_id=%q", err, r.Header.Get("Request-Id"))
 }
+
+func (s *Server) closeStream(w http.ResponseWriter, r *http.Request) {
+	writer, err := broker.NewWriter(key(r))
+	if err != nil {
+		handleError(w, r, err)
+		return
+	}
+
+	util.CountWithData("server.close", 1, "request_id=%q", r.Header.Get("Request-Id"))
+	err = writer.Close()
+	if err != nil {
+		handleError(w, r, err)
+		return
+	}
+	// Asynchronously upload the output to our defined storage backend.
+	go storeOutput(key(r), requestURI(r), s.StorageBaseURL(r))
+}

@@ -57,6 +57,7 @@ func (s *Server) router() http.Handler {
 
 	r.HandleFunc("/streams/{key:.+}", s.addDefaultHeaders(s.subscribe)).Methods("GET")
 	r.HandleFunc("/streams/{key:.+}", s.addDefaultHeaders(s.publish)).Methods("POST")
+	r.HandleFunc("/streams/{key:.+}", s.addDefaultHeaders(s.closeStream)).Methods("DELETE")
 	r.HandleFunc("/streams/{key:.+}", s.auth(s.addDefaultHeaders(s.createStream))).Methods("PUT")
 
 	return logRequest(s.enforceHTTPS(r.ServeHTTP))
