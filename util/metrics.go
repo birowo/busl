@@ -3,6 +3,8 @@ package util
 import (
 	"fmt"
 	"log"
+	"strings"
+	"time"
 )
 
 // Count parses a string into a count for logging to librato
@@ -28,4 +30,18 @@ func SampleWithData(metric string, value int64, extraData string, v ...interface
 	} else {
 		log.Printf("sample#busl.%s=%d %s", metric, value, fmt.Sprintf(extraData, v...))
 	}
+}
+
+func SMeasure(subject string, object string) string {
+	return fmt.Sprintf("measure#%s.%s=%s", prefix, subject, object)
+}
+
+func TimerStart(subject string, extras ...string) (time.Time, string, []string) {
+	log.Printf("%s.timer.start %s", subject, strings.Join(extras, " "))
+	return time.Now(), subject, extras
+}
+
+func TimerEnd(startTime time.Time, subject string, extras []string) {
+	elapsed := fmt.Sprintf("%f", time.Now().Sub(startTime).Seconds())
+	log.Printf("%s.timer.end %s %s", subject, SMeasure(subject+".elapsed.seconds", elapsed), strings.Join(extras, " "))
 }
