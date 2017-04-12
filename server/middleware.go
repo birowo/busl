@@ -183,6 +183,8 @@ func (s *Server) newReader(w http.ResponseWriter, r *http.Request) (io.ReadClose
 }
 
 func storeOutput(channel string, requestURI string, storageBase string) {
+	defer util.TimerEnd(util.TimerStart("server.storeOutput"))
+
 	if buf, err := broker.Get(channel); err == nil {
 		if err := storage.Put(requestURI, storageBase, bytes.NewBuffer(buf)); err != nil {
 			util.CountWithData("server.storeOutput.put.error", 1, "err=%s", err.Error())
