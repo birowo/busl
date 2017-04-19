@@ -64,13 +64,25 @@ func TestPubClosed(t *testing.T) {
 }
 
 func TestPubWithoutTransferEncoding(t *testing.T) {
-	request, _ := http.NewRequest("POST", "/streams/1234", nil)
-	response := httptest.NewRecorder()
+	client := &http.Client{Transport: &http.Transport{}}
+	server := httptest.NewServer(baseServer.router())
+	uuid, _ := util.NewUUID()
 
-	baseServer.publish(response, request)
+	registrar := broker.NewRedisRegistrar()
+	err := registrar.Register(uuid)
+	assert.Nil(t, err)
 
-	assert.Equal(t, response.Code, http.StatusBadRequest)
-	assert.Equal(t, response.Body.String(), "A chunked Transfer-Encoding header is required.\n")
+	req, _ := http.NewRequest("POST", server.URL+"/streams/"+uuid, bytes.NewBufferString("hello world"))
+	resp, err := client.Do(req)
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	resp, err = http.Get(server.URL + "/streams/" + uuid)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	assert.Equal(t, body, []byte("hello world"))
 }
 
 func TestPubSub(t *testing.T) {
