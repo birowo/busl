@@ -30,11 +30,6 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) publish(w http.ResponseWriter, r *http.Request) {
-	if !util.StringInSlice(r.TransferEncoding, "chunked") {
-		http.Error(w, "A chunked Transfer-Encoding header is required.", http.StatusBadRequest)
-		return
-	}
-
 	writer, err := broker.NewWriter(key(r))
 	if err != nil {
 		handleError(w, r, err)
