@@ -119,6 +119,25 @@ func TestRun(t *testing.T) {
 	}
 }
 
+func TestRunKillsProcessGroup(t *testing.T) {
+	r, w := io.Pipe()
+	go io.Copy(ioutil.Discard, r)
+
+	ch := make(chan error)
+	go func() {
+		ch <- run([]string{"/bin/sh", "-c", `(sleep 60 &) && printf hello`}, w, w)
+	}()
+
+	select {
+	case err := <-ch:
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatalf("timed out waiting")
+	}
+}
+
 func TestRequestID(t *testing.T) {
 	post := make(chan string, 1)
 

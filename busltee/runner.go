@@ -141,8 +141,12 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 	defer monitor("busltee.run", time.Now())
 
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdout = io.MultiWriter(stdout, os.Stdout)
-	cmd.Stderr = io.MultiWriter(stderr, os.Stderr)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	errCh, err := attachCmd(cmd, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr))
+	if err != nil {
+		return err
+	}
 
 	if err := cmd.Start(); err != nil {
 		return err
@@ -150,7 +154,59 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 
 	// Catch any signals sent to busltee, and pass those along.
 	deliverSignals(cmd)
-	return cmd.Wait()
+
+	state, err := wait(cmd)
+
+	var copyErr error
+	select {
+	case copyErr = <-errCh:
+	}
+
+	if err != nil {
+		return err
+	} else if !state.Success() {
+		return &exec.ExitError{ProcessState: state}
+	}
+
+	return copyErr
+}
+
+func attachCmd(cmd *exec.Cmd, stdout, stderr io.Writer) (<-chan error, error) {
+	ch := make(chan error)
+	errCh := make(chan error, 2)
+
+	copyFunc := func(w io.Writer, r io.ReadCloser) {
+		_, err := io.Copy(w, r)
+		r.Close()
+		errCh <- err
+	}
+
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	go copyFunc(stdout, stdoutPipe)
+
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+	go copyFunc(stderr, stderrPipe)
+
+	go func() {
+		var copyErr error
+		for i := 0; i < 2; i++ {
+			if err := <-errCh; err != nil && copyErr == nil {
+				copyErr = err
+			}
+		}
+		if copyErr != nil {
+			ch <- copyErr
+		}
+		close(ch)
+	}()
+
+	return ch, nil
 }
 
 func deliverSignals(cmd *exec.Cmd) {
@@ -160,6 +216,15 @@ func deliverSignals(cmd *exec.Cmd) {
 		s := <-sigc
 		cmd.Process.Signal(s)
 	}()
+}
+
+func wait(cmd *exec.Cmd) (*os.ProcessState, error) {
+	pgid, err := syscall.Getpgid(cmd.Process.Pid)
+	if err == nil {
+		defer syscall.Kill(-pgid, syscall.SIGTERM)
+	}
+
+	return cmd.Process.Wait()
 }
 
 func isTimeout(err error) bool {
