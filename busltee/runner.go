@@ -141,6 +141,7 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 	defer monitor("busltee.run", time.Now())
 
 	cmd := exec.Command(args[0], args[1:]...)
+
 	cmd.Stdout = io.MultiWriter(stdout, os.Stdout)
 	cmd.Stderr = io.MultiWriter(stderr, os.Stderr)
 
