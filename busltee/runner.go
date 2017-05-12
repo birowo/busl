@@ -141,6 +141,7 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 	defer monitor("busltee.run", time.Now())
 
 	cmd := exec.Command(args[0], args[1:]...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	errCh, err := attachCmd(cmd, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr))
 	if err != nil {
@@ -218,6 +219,11 @@ func deliverSignals(cmd *exec.Cmd) {
 }
 
 func wait(cmd *exec.Cmd) (*os.ProcessState, error) {
+	pgid, err := syscall.Getpgid(cmd.Process.Pid)
+	if err == nil {
+		defer syscall.Kill(-pgid, syscall.SIGTERM)
+	}
+
 	return cmd.Process.Wait()
 }
 
