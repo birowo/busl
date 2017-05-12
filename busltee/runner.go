@@ -142,7 +142,7 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 
 	cmd := exec.Command(args[0], args[1:]...)
 
-	_, err := attachCmd(cmd, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr))
+	errCh, err := attachCmd(cmd, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr))
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,20 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 	// Catch any signals sent to busltee, and pass those along.
 	deliverSignals(cmd)
 
-	return cmd.Wait()
+	state, err := cmd.Process.Wait()
+
+	var copyErr error
+	select {
+	case copyErr = <-errCh:
+	}
+
+	if err != nil {
+		return err
+	} else if !state.Success() {
+		return &exec.ExitError{ProcessState: state}
+	}
+
+	return copyErr
 }
 
 func attachCmd(cmd *exec.Cmd, stdout, stderr io.Writer) (<-chan error, error) {
