@@ -154,7 +154,7 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 	// Catch any signals sent to busltee, and pass those along.
 	deliverSignals(cmd)
 
-	state, err := cmd.Process.Wait()
+	state, err := wait(cmd)
 
 	var copyErr error
 	select {
@@ -215,6 +215,10 @@ func deliverSignals(cmd *exec.Cmd) {
 		s := <-sigc
 		cmd.Process.Signal(s)
 	}()
+}
+
+func wait(cmd *exec.Cmd) (*os.ProcessState, error) {
+	return cmd.Process.Wait()
 }
 
 func isTimeout(err error) bool {
