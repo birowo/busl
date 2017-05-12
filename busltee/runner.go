@@ -160,6 +160,7 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 	var copyErr error
 	select {
 	case copyErr = <-errCh:
+	case <-time.After(30 * time.Second):
 	}
 
 	if err != nil {
