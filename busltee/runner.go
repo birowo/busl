@@ -142,7 +142,10 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 
 	cmd := exec.Command(args[0], args[1:]...)
 
-	attachCmd(cmd, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr))
+	_, err := attachCmd(cmd, io.MultiWriter(stdout, os.Stdout), io.MultiWriter(stderr, os.Stderr))
+	if err != nil {
+		return err
+	}
 
 	if err := cmd.Start(); err != nil {
 		return err
@@ -153,9 +156,42 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 	return cmd.Wait()
 }
 
-func attachCmd(cmd *exec.Cmd, stdout, stderr io.Writer) {
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
+func attachCmd(cmd *exec.Cmd, stdout, stderr io.Writer) (<-chan error, error) {
+	ch := make(chan error)
+	errCh := make(chan error, 2)
+
+	copyFunc := func(w io.Writer, r io.ReadCloser) {
+		_, err := io.Copy(w, r)
+		r.Close()
+		errCh <- err
+	}
+
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	go copyFunc(stdout, stdoutPipe)
+
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+	go copyFunc(stderr, stderrPipe)
+
+	go func() {
+		var copyErr error
+		for i := 0; i < 2; i++ {
+			if err := <-errCh; err != nil && copyErr == nil {
+				copyErr = err
+			}
+		}
+		if copyErr != nil {
+			ch <- copyErr
+		}
+		close(ch)
+	}()
+
+	return ch, nil
 }
 
 func deliverSignals(cmd *exec.Cmd) {
