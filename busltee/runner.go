@@ -153,6 +153,7 @@ func run(args []string, stdout, stderr io.WriteCloser) error {
 
 	// Catch any signals sent to busltee, and pass those along.
 	deliverSignals(cmd)
+
 	return cmd.Wait()
 }
 
