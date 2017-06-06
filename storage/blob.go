@@ -114,7 +114,10 @@ func get(requestURI, baseURI string, offset int64) (io.ReadCloser, error) {
 	}
 	req.TransferEncoding = []string{"chunked"}
 	req.Header.Add("Transfer-Encoding", "chunked")
-	req.Header.Add("Range", fmt.Sprintf("bytes=%d-", offset))
+
+	if offset > 0 {
+		req.Header.Add("Range", fmt.Sprintf("bytes=%d-", offset))
+	}
 
 	res, err := process(req)
 	if res == nil {
